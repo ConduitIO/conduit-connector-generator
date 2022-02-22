@@ -17,13 +17,13 @@ package generator
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
 
-	"github.com/conduitio/conduit/pkg/foundation/cerrors"
-	"github.com/conduitio/conduit/pkg/plugin/sdk"
+	sdk "github.com/conduitio/connector-plugin-sdk"
 )
 
 // Source connector
@@ -41,7 +41,7 @@ func NewSource() sdk.Source {
 func (s *Source) Configure(ctx context.Context, config map[string]string) error {
 	parsedCfg, err := Parse(config)
 	if err != nil {
-		return cerrors.Errorf("invalid config: %w", err)
+		return fmt.Errorf("invalid config: %w", err)
 	}
 	s.Config = parsedCfg
 	return nil
@@ -103,14 +103,14 @@ func (s *Source) newDummyValue(typeString string, i int64) interface{} {
 	case "bool":
 		return rand.Int()%2 == 0 //nolint:gosec // security not important here
 	default:
-		panic(cerrors.New("invalid field"))
+		panic(errors.New("invalid field"))
 	}
 }
 
 func (s *Source) toRawData(rec map[string]interface{}) (sdk.Data, error) {
 	bytes, err := json.Marshal(rec)
 	if err != nil {
-		return nil, cerrors.Errorf("couldn't serialize data: %w", err)
+		return nil, fmt.Errorf("couldn't serialize data: %w", err)
 	}
 	return sdk.RawData(bytes), nil
 }
