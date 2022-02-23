@@ -18,49 +18,54 @@ import (
 	"testing"
 	"time"
 
-	"github.com/conduitio/conduit/pkg/foundation/assert"
+	"github.com/matryer/is"
 )
 
 func TestParseFull(t *testing.T) {
+	is := is.New(t)
 	underTest, err := Parse(map[string]string{
 		"recordCount": "-1",
 		"readTime":    "5s",
 		"fields":      "id:int,name:string,joined:time,admin:bool",
 	})
-	assert.Ok(t, err)
-	assert.Equal(t, int64(-1), underTest.RecordCount)
-	assert.Equal(t, 5*time.Second, underTest.ReadTime)
-	assert.Equal(t, map[string]string{"id": "int", "name": "string", "joined": "time", "admin": "bool"}, underTest.Fields)
+	is.NoErr(err)
+	is.Equal(int64(-1), underTest.RecordCount)
+	is.Equal(5*time.Second, underTest.ReadTime)
+	is.Equal(map[string]string{"id": "int", "name": "string", "joined": "time", "admin": "bool"}, underTest.Fields)
 }
 
 func TestParseFields_RequiredNotPresent(t *testing.T) {
+	is := is.New(t)
 	_, err := Parse(map[string]string{
 		"recordCount": "100",
 		"readTime":    "5s",
 	})
-	assert.Error(t, err)
-	assert.Equal(t, "no fields specified", err.Error())
+	is.True(err != nil)
+	is.Equal("no fields specified", err.Error())
 }
 
 func TestParseFields_OptionalNotPresent(t *testing.T) {
+	is := is.New(t)
 	_, err := Parse(map[string]string{
 		"fields": "a:int",
 	})
-	assert.Ok(t, err)
+	is.NoErr(err)
 }
 
 func TestParseFields_MalformedFields_NoType(t *testing.T) {
+	is := is.New(t)
 	_, err := Parse(map[string]string{
 		"fields": "abc:",
 	})
-	assert.Error(t, err)
-	assert.Equal(t, `invalid field spec "abc:"`, err.Error())
+	is.True(err != nil)
+	is.Equal(`invalid field spec "abc:"`, err.Error())
 }
 
 func TestParseFields_MalformedFields_NameOnly(t *testing.T) {
+	is := is.New(t)
 	_, err := Parse(map[string]string{
 		"fields": "abc",
 	})
-	assert.Error(t, err)
-	assert.Equal(t, `invalid field spec "abc"`, err.Error())
+	is.True(err != nil)
+	is.Equal(`invalid field spec "abc"`, err.Error())
 }

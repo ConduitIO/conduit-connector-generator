@@ -15,7 +15,7 @@
 package generator
 
 import (
-	"github.com/conduitio/conduit/pkg/plugin/sdk"
+	sdk "github.com/conduitio/connector-plugin-sdk"
 )
 
 // Specification returns the Plugin's Specification.
