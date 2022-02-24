@@ -24,8 +24,8 @@ func Specification() sdk.Specification {
 		Name:              "generator",
 		Summary:           "Generator plugin",
 		Description:       "A plugin capable of generating dummy records (in JSON format).",
-		Version:           "v0.5.0",
-		Author:            "Meroxa",
+		Version:           "v0.1.0",
+		Author:            "Meroxa, Inc.",
 		DestinationParams: map[string]sdk.Parameter{},
 		SourceParams: map[string]sdk.Parameter{
 			RecordCount: {
