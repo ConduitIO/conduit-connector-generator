@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"time"
 
-	sdk "github.com/conduitio/connector-plugin-sdk"
+	sdk "github.com/conduitio/conduit-plugin-sdk"
 )
 
 // Source connector
