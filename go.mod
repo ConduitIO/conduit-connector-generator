@@ -1,14 +1,14 @@
-module github.com/conduitio/conduit-plugin-generator
+module github.com/conduitio/conduit-connector-generator
 
 go 1.17
 
 require (
-	github.com/conduitio/conduit-plugin-sdk v0.0.0-20220301133352-f8528ba3f87f
+	github.com/conduitio/conduit-connector-sdk v0.0.0-20220302183659-cde4aa4147ae
 	github.com/matryer/is v1.4.0
 )
 
 require (
-	github.com/conduitio/conduit-plugin-protocol v0.0.0-20220301130721-cbefccd064ea // indirect
+	github.com/conduitio/conduit-connector-protocol v0.0.0-20220302182649-4f4c215c2b83 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.7 // indirect
@@ -22,7 +22,7 @@ require (
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/rs/zerolog v1.26.1 // indirect
-	go.buf.build/library/go-grpc/conduitio/conduit-plugin-protocol v1.4.1 // indirect
+	go.buf.build/library/go-grpc/conduitio/conduit-connector-protocol v1.4.1 // indirect
 	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/text v0.3.7 // indirect

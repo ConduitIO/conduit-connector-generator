@@ -15,8 +15,8 @@
 package main
 
 import (
-	generator "github.com/conduitio/conduit-plugin-generator"
-	sdk "github.com/conduitio/conduit-plugin-sdk"
+	generator "github.com/conduitio/conduit-connector-generator"
+	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
 func main() {
