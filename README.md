@@ -1,3 +1,5 @@
+# Conduit Connector Generator
+
 ### General
 The generator connector is one of [Conduit](https://github.com/ConduitIO/conduit) builtin plugins.
 It generates sample records using its source connector.
