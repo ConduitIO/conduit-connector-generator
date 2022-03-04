@@ -4,7 +4,7 @@ It generates sample records using its source connector.
 It has no destination and trying to use that will result in an error.
 
 ### How to build it
-Run `make build`.
+Run `make`.
 
 ### Testing
 Run `make test` to run all the unit tests.
