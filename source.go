@@ -52,6 +52,12 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 }
 
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
+	select {
+	case <-ctx.Done():
+	default:
+		return sdk.Record{}, ctx.Err()
+	}
+
 	if s.created >= s.Config.RecordCount && s.Config.RecordCount >= 0 {
 		// nothing more to produce, block until context is done
 		<-ctx.Done()
