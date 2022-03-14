@@ -26,6 +26,9 @@ const (
 	RecordCount = "recordCount"
 	ReadTime    = "readTime"
 	Fields      = "fields"
+	Format      = "format"
+	Raw         = "raw"
+	Structured  = "structured"
 )
 
 var knownFieldTypes = []string{"int", "string", "time", "bool"}
@@ -34,6 +37,7 @@ type Config struct {
 	RecordCount int64
 	ReadTime    time.Duration
 	Fields      map[string]string
+	Format      string
 }
 
 func Parse(config map[string]string) (Config, error) {
@@ -54,6 +58,18 @@ func Parse(config map[string]string) (Config, error) {
 		}
 		parsed.ReadTime = readTimeParsed
 	}
+	parsed.Format = Raw
+	if format, ok := config[Format]; ok {
+		switch format {
+		case Raw, Structured:
+			parsed.Format = format
+		case "":
+			// leave default
+		default:
+			return Config{}, fmt.Errorf("unknown payload format %q", format)
+		}
+	}
+
 	fieldsConcat := config[Fields]
 	if fieldsConcat == "" {
 		return Config{}, errors.New("no fields specified")

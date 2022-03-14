@@ -69,3 +69,63 @@ func TestParseFields_MalformedFields_NameOnly(t *testing.T) {
 	is.True(err != nil)
 	is.Equal(`invalid field spec "abc"`, err.Error())
 }
+
+func TestParseFormat(t *testing.T) {
+	testCases := []struct {
+		name   string
+		input  map[string]string
+		expErr string
+		expVal string
+	}{
+		{
+			name: "parse 'raw'",
+			input: map[string]string{
+				"fields": "id:int",
+				"format": Raw,
+			},
+			expErr: "",
+			expVal: Raw,
+		},
+		{
+			name: "parse 'structured'",
+			input: map[string]string{
+				"fields": "id:int",
+				"format": Structured,
+			},
+			expErr: "",
+			expVal: Structured,
+		},
+		{
+			name: "default is 'raw' when no value present",
+			input: map[string]string{
+				"fields": "id:int",
+			},
+			expErr: "",
+			expVal: Raw,
+		},
+		{
+			name: "default is 'raw' when empty string present",
+			input: map[string]string{
+				"fields": "id:int",
+				"format": "",
+			},
+			expErr: "",
+			expVal: Raw,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			is := is.New(t)
+			parsed, err := Parse(tc.input)
+			if tc.expErr != "" {
+				is.True(err != nil)
+				is.Equal(tc.expErr, err.Error())
+			} else {
+				is.True(err == nil)
+				is.Equal(tc.expVal, parsed.Format)
+			}
+		})
+	}
+}
