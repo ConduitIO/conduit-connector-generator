@@ -59,9 +59,11 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	}
 	s.created++
 
-	if s.Config.ReadTime > 0 {
-		time.Sleep(s.Config.ReadTime)
+	err := s.sleep(ctx, s.Config.ReadTime)
+	if err != nil {
+		return sdk.Record{}, err
 	}
+
 	data, err := s.toRawData(s.newRecord(s.created))
 	if err != nil {
 		return sdk.Record{}, err
@@ -73,6 +75,27 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		Payload:   data,
 		CreatedAt: time.Now(),
 	}, nil
+}
+
+func (s *Source) sleep(ctx context.Context, duration time.Duration) error {
+	if duration > 0 {
+		// If a sleep duration is requested the function will block for that
+		// period or until the context gets cancelled
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(duration):
+			return nil
+		}
+	}
+
+	// By default, we just check if the context is still valid.
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return nil
+	}
 }
 
 func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
