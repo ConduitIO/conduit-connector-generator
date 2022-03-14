@@ -1,25 +1,25 @@
+# Conduit Connector Generator
+
 ### General
-The generator plugin is able to generate sample records with its source.
-It has no destination and trying to use it will result in an error.
+The generator connector is one of [Conduit](https://github.com/ConduitIO/conduit) builtin plugins.
+It generates sample records using its source connector.
+It has no destination and trying to use that will result in an error.
 
-The data is generated in JSON format. The JSON objects themselves are generated using a field specification, which is 
-explained in more details in the [Configuration section](#Configuration) below.
-
-The plugin is great for getting started with Conduit but also for certain types of performance tests.
-
-### How to build?
-Run `make build-generator-plugin`.
+### How to build it
+Run `make`.
 
 ### Testing
 Run `make test` to run all the unit tests.
 
+### How it works
+The data is generated in JSON format. The JSON objects themselves are generated using a field specification, which is 
+explained in more details in the [Configuration section](#Configuration) below.
+
+The connector is great for getting started with Conduit but also for certain types of performance tests.
+
 ### Configuration
-`recordCount`
-The number of records to be generated.
-If a negative value is used, the source will generate records until stopped.
-
-`readTime`
-The time it takes to 'read' a record. It can be used to simulate latency and, for example, simulate slow or fast sources.
-
-`fields`
-A comma-separated list of name:type tokens, where type can be: int, string, time, bool. An example is: `id:int,name:string,joined:time,admin:bool`.
+| name          | description                                                                                | required | Default |
+|---------------|--------------------------------------------------------------------------------------------|----------|---------|
+| recordCount   | Number of records to be generated. -1 for no limit.                                        | false    | "-1"    |
+| readTime      | The time it takes to 'read' a record.                                                      | false    | "0s"    |
+| fields      | A comma-separated list of name:type tokens, where type can be: int, string, time, bool.    | true     | ""      |
