@@ -29,14 +29,16 @@ func TestRead_RawData(t *testing.T) {
 	cfg := map[string]string{
 		"recordCount": "1",
 		"fields":      "id:int,name:string,joined:time,admin:bool",
-		"format":      "raw",
+		"format":      Raw,
 	}
 	underTest := NewSource()
 	t.Cleanup(func() {
-		underTest.Teardown(context.Background())
+		_ = underTest.Teardown(context.Background())
 	})
 
-	underTest.Configure(context.Background(), cfg)
+	err := underTest.Configure(context.Background(), cfg)
+	is.NoErr(err)
+
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
 
@@ -49,7 +51,7 @@ func TestRead_RawData(t *testing.T) {
 		joined time.Time
 		admin  bool
 	}{}
-	err = json.Unmarshal(v, &recStruct)
+	err = json.Unmarshal(v, &recStruct) //nolint:staticcheck // test struct
 	is.NoErr(err)
 }
 
@@ -58,14 +60,16 @@ func TestRead_StructuredData(t *testing.T) {
 	cfg := map[string]string{
 		"recordCount": "1",
 		"fields":      "id:int,name:string,joined:time,admin:bool",
-		"format":      "structured",
+		"format":      Structured,
 	}
 	underTest := NewSource()
 	t.Cleanup(func() {
-		underTest.Teardown(context.Background())
+		_ = underTest.Teardown(context.Background())
 	})
 
-	underTest.Configure(context.Background(), cfg)
+	err := underTest.Configure(context.Background(), cfg)
+	is.NoErr(err)
+
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
 
@@ -81,6 +85,6 @@ func TestRead_StructuredData(t *testing.T) {
 	// map to json to struct, so we can check types of all fields easily
 	bytes, err := json.Marshal(v)
 	is.NoErr(err)
-	err = json.Unmarshal(bytes, &recStruct)
+	err = json.Unmarshal(bytes, &recStruct) //nolint:staticcheck // test struct
 	is.NoErr(err)
 }

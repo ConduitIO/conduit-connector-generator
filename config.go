@@ -27,6 +27,8 @@ const (
 	ReadTime    = "readTime"
 	Fields      = "fields"
 	Format      = "format"
+	Raw         = "raw"
+	Structured  = "structured"
 )
 
 var knownFieldTypes = []string{"int", "string", "time", "bool"}
@@ -56,10 +58,10 @@ func Parse(config map[string]string) (Config, error) {
 		}
 		parsed.ReadTime = readTimeParsed
 	}
-	parsed.Format = "raw"
+	parsed.Format = Raw
 	if format, ok := config[Format]; ok {
 		switch format {
-		case "raw", "structured":
+		case Raw, Structured:
 			parsed.Format = format
 		case "":
 			// leave default
