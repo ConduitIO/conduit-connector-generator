@@ -22,4 +22,4 @@ The connector is great for getting started with Conduit but also for certain typ
 |---------------|--------------------------------------------------------------------------------------------|----------|---------|
 | recordCount   | Number of records to be generated. -1 for no limit.                                        | false    | "-1"    |
 | readTime      | The time it takes to 'read' a record.                                                      | false    | "0s"    |
-| readTime      | A comma-separated list of name:type tokens, where type can be: int, string, time, bool.    | true     | ""      |
+| fields      | A comma-separated list of name:type tokens, where type can be: int, string, time, bool.    | true     | ""      |
