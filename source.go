@@ -64,7 +64,7 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, err
 	}
 
-	data, err := s.toRawData(s.newRecord(s.created))
+	data, err := s.toData(s.newRecord(s.created))
 	if err != nil {
 		return sdk.Record{}, err
 	}
@@ -130,10 +130,21 @@ func (s *Source) newDummyValue(typeString string, i int64) interface{} {
 	}
 }
 
-func (s *Source) toRawData(rec map[string]interface{}) (sdk.Data, error) {
+func (s *Source) toData(rec map[string]interface{}) (sdk.Data, error) {
+	switch s.Config.Format {
+	case "raw":
+		return s.toRawData(rec)
+	case "structured":
+		return sdk.StructuredData(rec), nil
+	default:
+		return nil, fmt.Errorf("unknown format request %q", s.Config.Format)
+	}
+}
+
+func (s *Source) toRawData(rec map[string]interface{}) (sdk.RawData, error) {
 	bytes, err := json.Marshal(rec)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't serialize data: %w", err)
 	}
-	return sdk.RawData(bytes), nil
+	return bytes, nil
 }
