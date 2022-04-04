@@ -81,19 +81,19 @@ func TestParseFormat(t *testing.T) {
 			name: "parse 'raw'",
 			input: map[string]string{
 				"fields": "id:int",
-				"format": Raw,
+				"format": FormatRaw,
 			},
 			expErr: "",
-			expVal: Raw,
+			expVal: FormatRaw,
 		},
 		{
 			name: "parse 'structured'",
 			input: map[string]string{
 				"fields": "id:int",
-				"format": Structured,
+				"format": FormatStructured,
 			},
 			expErr: "",
-			expVal: Structured,
+			expVal: FormatStructured,
 		},
 		{
 			name: "default is 'raw' when no value present",
@@ -101,7 +101,7 @@ func TestParseFormat(t *testing.T) {
 				"fields": "id:int",
 			},
 			expErr: "",
-			expVal: Raw,
+			expVal: FormatRaw,
 		},
 		{
 			name: "default is 'raw' when empty string present",
@@ -110,7 +110,7 @@ func TestParseFormat(t *testing.T) {
 				"format": "",
 			},
 			expErr: "",
-			expVal: Raw,
+			expVal: FormatRaw,
 		},
 	}
 

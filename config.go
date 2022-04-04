@@ -27,8 +27,9 @@ const (
 	ReadTime    = "readTime"
 	Fields      = "fields"
 	Format      = "format"
-	Raw         = "raw"
-	Structured  = "structured"
+
+	FormatRaw        = "raw"
+	FormatStructured = "structured"
 )
 
 var knownFieldTypes = []string{"int", "string", "time", "bool"}
@@ -58,16 +59,14 @@ func Parse(config map[string]string) (Config, error) {
 		}
 		parsed.ReadTime = readTimeParsed
 	}
-	parsed.Format = Raw
-	if format, ok := config[Format]; ok {
-		switch format {
-		case Raw, Structured:
-			parsed.Format = format
-		case "":
-			// leave default
-		default:
-			return Config{}, fmt.Errorf("unknown payload format %q", format)
-		}
+	parsed.Format = FormatRaw // default
+	switch config[Format] {
+	case FormatRaw, FormatStructured:
+		parsed.Format = config[Format]
+	case "":
+		// leave default
+	default:
+		return Config{}, fmt.Errorf("unknown payload format %q", config[Format])
 	}
 
 	fieldsConcat := config[Fields]

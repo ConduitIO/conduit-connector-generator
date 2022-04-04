@@ -43,6 +43,11 @@ func Specification() sdk.Specification {
 				Required:    true,
 				Description: "A comma-separated list of name:type tokens, where type can be: int, string, time, bool.",
 			},
+			Format: {
+				Default:     FormatRaw,
+				Required:    false,
+				Description: "Format of the generated payload data: raw, structured.",
+			},
 		},
 	}
 }
