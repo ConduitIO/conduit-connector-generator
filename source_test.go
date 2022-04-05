@@ -29,7 +29,7 @@ func TestRead_RawData(t *testing.T) {
 	cfg := map[string]string{
 		"recordCount": "1",
 		"fields":      "id:int,name:string,joined:time,admin:bool",
-		"format":      Raw,
+		"format":      FormatRaw,
 	}
 	underTest := NewSource()
 	t.Cleanup(func() {
@@ -60,7 +60,7 @@ func TestRead_StructuredData(t *testing.T) {
 	cfg := map[string]string{
 		"recordCount": "1",
 		"fields":      "id:int,name:string,joined:time,admin:bool",
-		"format":      Structured,
+		"format":      FormatStructured,
 	}
 	underTest := NewSource()
 	t.Cleanup(func() {

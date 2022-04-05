@@ -132,9 +132,9 @@ func (s *Source) newDummyValue(typeString string, i int64) interface{} {
 
 func (s *Source) toData(rec map[string]interface{}) (sdk.Data, error) {
 	switch s.Config.Format {
-	case Raw:
+	case FormatRaw:
 		return s.toRawData(rec)
-	case Structured:
+	case FormatStructured:
 		return sdk.StructuredData(rec), nil
 	default:
 		return nil, fmt.Errorf("unknown format request %q", s.Config.Format)
