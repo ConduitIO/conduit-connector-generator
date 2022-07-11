@@ -104,10 +104,10 @@ func Parse(config map[string]string) (Config, error) {
 
 func parseFieldsMap(config map[string]string) (map[string]string, error) {
 	fieldsConcat := config[Fields]
-	fieldsMap := map[string]string{}
 	if fieldsConcat == "" {
-		return fieldsMap, nil
+		return nil, nil
 	}
+	fieldsMap := map[string]string{}
 	fields := strings.Split(fieldsConcat, ",")
 	for _, field := range fields {
 		if strings.Trim(field, " ") == "" {
