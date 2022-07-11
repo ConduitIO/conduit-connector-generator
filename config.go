@@ -27,6 +27,7 @@ const (
 	ReadTime    = "readTime"
 	Fields      = "fields"
 	Format      = "format"
+	PayloadFile = "payloadFile"
 
 	FormatRaw        = "raw"
 	FormatStructured = "structured"
@@ -39,10 +40,13 @@ type Config struct {
 	ReadTime    time.Duration
 	Fields      map[string]string
 	Format      string
+	PayloadFile string
 }
 
 func Parse(config map[string]string) (Config, error) {
 	parsed := Config{}
+
+	// parse record count
 	// default value
 	parsed.RecordCount = -1
 	if recCount, ok := config[RecordCount]; ok {
@@ -52,6 +56,8 @@ func Parse(config map[string]string) (Config, error) {
 		}
 		parsed.RecordCount = recCountParsed
 	}
+
+	// parse read time
 	if readTime, ok := config[ReadTime]; ok {
 		readTimeParsed, err := time.ParseDuration(readTime)
 		if err != nil || readTimeParsed < 0 {
@@ -59,6 +65,11 @@ func Parse(config map[string]string) (Config, error) {
 		}
 		parsed.ReadTime = readTimeParsed
 	}
+
+	// parse payload file
+	parsed.PayloadFile = config[PayloadFile]
+
+	// parse payload format
 	parsed.Format = FormatRaw // default
 	switch config[Format] {
 	case FormatRaw, FormatStructured:
@@ -69,29 +80,49 @@ func Parse(config map[string]string) (Config, error) {
 		return Config{}, fmt.Errorf("unknown payload format %q", config[Format])
 	}
 
-	fieldsConcat := config[Fields]
-	if fieldsConcat == "" {
-		return Config{}, errors.New("no fields specified")
+	// check if the PayloadFile parameter is compatible with other parameters
+	if parsed.PayloadFile != "" && parsed.Format == FormatStructured {
+		return Config{}, errors.New("payload file can only go with raw format")
 	}
 
-	fieldsMap := map[string]string{}
-	fields := strings.Split(fieldsConcat, ",")
-	for _, field := range fields {
-		if strings.Trim(field, " ") == "" {
-			return Config{}, fmt.Errorf("got empty field spec in %q", field)
-		}
-		fieldSpec := strings.Split(field, ":")
-		if validFieldSpec(fieldSpec) {
-			return Config{}, fmt.Errorf("invalid field spec %q", field)
-		}
-		if !knownType(fieldSpec[1]) {
-			return Config{}, fmt.Errorf("unknown data type in %q", field)
-		}
-		fieldsMap[fieldSpec[0]] = fieldSpec[1]
+	// parse fields
+	fieldsMap, err := parseFieldsMap(config)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed parsing field spec: %w", err)
+	}
+
+	if len(fieldsMap) != 0 && parsed.PayloadFile != "" {
+		return Config{}, errors.New("cannot specify fields and payload field at the same time")
+	}
+	if len(fieldsMap) == 0 && parsed.PayloadFile == "" {
+		return Config{}, errors.New("no fields specified")
 	}
 	parsed.Fields = fieldsMap
 
 	return parsed, nil
+}
+
+func parseFieldsMap(config map[string]string) (map[string]string, error) {
+	fieldsConcat := config[Fields]
+	fieldsMap := map[string]string{}
+	if fieldsConcat == "" {
+		return fieldsMap, nil
+	}
+	fields := strings.Split(fieldsConcat, ",")
+	for _, field := range fields {
+		if strings.Trim(field, " ") == "" {
+			return nil, fmt.Errorf("got empty field spec in %q", field)
+		}
+		fieldSpec := strings.Split(field, ":")
+		if validFieldSpec(fieldSpec) {
+			return nil, fmt.Errorf("invalid field spec %q", field)
+		}
+		if !knownType(fieldSpec[1]) {
+			return nil, fmt.Errorf("unknown data type in %q", field)
+		}
+		fieldsMap[fieldSpec[0]] = fieldSpec[1]
+	}
+	return fieldsMap, nil
 }
 
 func validFieldSpec(fieldSpec []string) bool {

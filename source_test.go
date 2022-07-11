@@ -27,9 +27,39 @@ import (
 func TestRead_RawData(t *testing.T) {
 	is := is.New(t)
 	cfg := map[string]string{
-		"recordCount": "1",
-		"fields":      "id:int,name:string,joined:time,admin:bool",
-		"format":      FormatRaw,
+		RecordCount: "1",
+		Fields:      "id:int,name:string,joined:time,admin:bool",
+		Format:      FormatRaw,
+	}
+	underTest := NewSource()
+	t.Cleanup(func() {
+		_ = underTest.Teardown(context.Background())
+	})
+
+	err := underTest.Configure(context.Background(), cfg)
+	is.NoErr(err)
+
+	rec, err := underTest.Read(context.Background())
+	is.NoErr(err)
+
+	v, ok := rec.Payload.(sdk.RawData)
+	is.True(ok)
+
+	recStruct := struct {
+		id     int32
+		name   string
+		joined time.Time
+		admin  bool
+	}{}
+	err = json.Unmarshal(v, &recStruct) //nolint:staticcheck // test struct
+	is.NoErr(err)
+}
+
+func TestRead_PayloadFile(t *testing.T) {
+	is := is.New(t)
+	cfg := map[string]string{
+		RecordCount: "1",
+		PayloadFile: "./source_test.go",
 	}
 	underTest := NewSource()
 	t.Cleanup(func() {
@@ -58,9 +88,9 @@ func TestRead_RawData(t *testing.T) {
 func TestRead_StructuredData(t *testing.T) {
 	is := is.New(t)
 	cfg := map[string]string{
-		"recordCount": "1",
-		"fields":      "id:int,name:string,joined:time,admin:bool",
-		"format":      FormatStructured,
+		RecordCount: "1",
+		Fields:      "id:int,name:string,joined:time,admin:bool",
+		Format:      FormatStructured,
 	}
 	underTest := NewSource()
 	t.Cleanup(func() {

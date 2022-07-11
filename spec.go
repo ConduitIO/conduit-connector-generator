@@ -48,6 +48,11 @@ func Specification() sdk.Specification {
 				Required:    false,
 				Description: "Format of the generated payload data: raw, structured.",
 			},
+			PayloadFile: {
+				Default:     "",
+				Required:    false,
+				Description: "Path to file containing the payload for generated records.",
+			},
 		},
 	}
 }

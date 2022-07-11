@@ -27,11 +27,42 @@ func TestParseFull(t *testing.T) {
 		"recordCount": "-1",
 		"readTime":    "5s",
 		"fields":      "id:int,name:string,joined:time,admin:bool",
+		"format":      FormatRaw,
 	})
 	is.NoErr(err)
 	is.Equal(int64(-1), underTest.RecordCount)
 	is.Equal(5*time.Second, underTest.ReadTime)
 	is.Equal(map[string]string{"id": "int", "name": "string", "joined": "time", "admin": "bool"}, underTest.Fields)
+	is.Equal(FormatRaw, underTest.Format)
+}
+
+func TestParse_PayloadFile_Fields(t *testing.T) {
+	is := is.New(t)
+	_, err := Parse(map[string]string{
+		Fields:      "id:int",
+		PayloadFile: "/path/to/file.txt",
+	})
+	is.True(err != nil)
+	is.Equal("cannot specify fields and payload field at the same time", err.Error())
+}
+
+func TestParse_PayloadFile(t *testing.T) {
+	is := is.New(t)
+	underTest, err := Parse(map[string]string{
+		PayloadFile: "/path/to/file.txt",
+	})
+	is.NoErr(err)
+	is.Equal("/path/to/file.txt", underTest.PayloadFile)
+}
+
+func TestParse_FormatStructured_PayloadFile(t *testing.T) {
+	is := is.New(t)
+	_, err := Parse(map[string]string{
+		"format":      FormatStructured,
+		"payloadFile": "/path/to/file.txt",
+	})
+	is.True(err != nil)
+	is.Equal("payload file can only go with raw format", err.Error())
 }
 
 func TestParseFields_RequiredNotPresent(t *testing.T) {
@@ -58,7 +89,7 @@ func TestParseFields_MalformedFields_NoType(t *testing.T) {
 		"fields": "abc:",
 	})
 	is.True(err != nil)
-	is.Equal(`invalid field spec "abc:"`, err.Error())
+	is.Equal(`failed parsing field spec: invalid field spec "abc:"`, err.Error())
 }
 
 func TestParseFields_MalformedFields_NameOnly(t *testing.T) {
@@ -67,7 +98,7 @@ func TestParseFields_MalformedFields_NameOnly(t *testing.T) {
 		"fields": "abc",
 	})
 	is.True(err != nil)
-	is.Equal(`invalid field spec "abc"`, err.Error())
+	is.Equal(`failed parsing field spec: invalid field spec "abc"`, err.Error())
 }
 
 func TestParseFormat(t *testing.T) {

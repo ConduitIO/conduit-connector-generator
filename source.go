@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"strconv"
 	"time"
@@ -31,7 +32,8 @@ type Source struct {
 	sdk.UnimplementedSource
 
 	created int64
-	Config  Config
+	payload []byte
+	config  Config
 }
 
 func NewSource() sdk.Source {
@@ -43,28 +45,33 @@ func (s *Source) Configure(ctx context.Context, config map[string]string) error 
 	if err != nil {
 		return fmt.Errorf("invalid config: %w", err)
 	}
-	s.Config = parsedCfg
+	s.config = parsedCfg
 	return nil
 }
 
 func (s *Source) Open(ctx context.Context, position sdk.Position) error {
+	bytes, err := ioutil.ReadFile(s.config.PayloadFile)
+	if err != nil {
+		return fmt.Errorf("failed reading payload file: %w", err)
+	}
+	s.payload = bytes
 	return nil // nothing to start
 }
 
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
-	if s.created >= s.Config.RecordCount && s.Config.RecordCount >= 0 {
+	if s.created >= s.config.RecordCount && s.config.RecordCount >= 0 {
 		// nothing more to produce, block until context is done
 		<-ctx.Done()
 		return sdk.Record{}, ctx.Err()
 	}
 	s.created++
 
-	err := s.sleep(ctx, s.Config.ReadTime)
+	err := s.sleep(ctx, s.config.ReadTime)
 	if err != nil {
 		return sdk.Record{}, err
 	}
 
-	data, err := s.toData(s.newRecord(s.created))
+	data, err := s.generatePayload()
 	if err != nil {
 		return sdk.Record{}, err
 	}
@@ -109,7 +116,7 @@ func (s *Source) Teardown(ctx context.Context) error {
 
 func (s *Source) newRecord(i int64) map[string]interface{} {
 	rec := make(map[string]interface{})
-	for name, typeString := range s.Config.Fields {
+	for name, typeString := range s.config.Fields {
 		rec[name] = s.newDummyValue(typeString, i)
 	}
 	return rec
@@ -131,13 +138,13 @@ func (s *Source) newDummyValue(typeString string, i int64) interface{} {
 }
 
 func (s *Source) toData(rec map[string]interface{}) (sdk.Data, error) {
-	switch s.Config.Format {
+	switch s.config.Format {
 	case FormatRaw:
 		return s.toRawData(rec)
 	case FormatStructured:
 		return sdk.StructuredData(rec), nil
 	default:
-		return nil, fmt.Errorf("unknown format request %q", s.Config.Format)
+		return nil, fmt.Errorf("unknown format request %q", s.config.Format)
 	}
 }
 
@@ -147,4 +154,11 @@ func (s *Source) toRawData(rec map[string]interface{}) (sdk.RawData, error) {
 		return nil, fmt.Errorf("couldn't serialize data: %w", err)
 	}
 	return bytes, nil
+}
+
+func (s *Source) generatePayload() (sdk.Data, error) {
+	if s.payload != nil {
+		return sdk.RawData(s.payload), nil
+	}
+	return s.toData(s.newRecord(s.created))
 }
