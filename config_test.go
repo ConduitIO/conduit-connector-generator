@@ -36,33 +36,69 @@ func TestParseFull(t *testing.T) {
 	is.Equal(FormatRaw, underTest.Format)
 }
 
-func TestParse_PayloadFile_Fields(t *testing.T) {
-	is := is.New(t)
-	_, err := Parse(map[string]string{
-		Fields:      "id:int",
-		PayloadFile: "/path/to/file.txt",
-	})
-	is.True(err != nil)
-	is.Equal("cannot specify fields and payload field at the same time", err.Error())
-}
-
 func TestParse_PayloadFile(t *testing.T) {
-	is := is.New(t)
-	underTest, err := Parse(map[string]string{
-		PayloadFile: "/path/to/file.txt",
-	})
-	is.NoErr(err)
-	is.Equal("/path/to/file.txt", underTest.PayloadFile)
-}
+	testCases := []struct {
+		name    string
+		input   map[string]string
+		wantErr string
+		wantCfg Config
+	}{
+		{
+			name: "cannot specify fields and payload field at the same time",
+			input: map[string]string{
+				Fields:      "id:int",
+				PayloadFile: "/path/to/file.txt",
+			},
+			wantErr: "cannot specify fields and payload field at the same time",
+		},
+		{
+			name: "payload file can only go with raw format",
+			input: map[string]string{
+				"format":      FormatStructured,
+				"payloadFile": "/path/to/file.txt",
+			},
+			wantErr: "payload file can only go with raw format",
+		},
+		{
+			name: "payload file, default format",
+			input: map[string]string{
+				PayloadFile: "/path/to/file.txt",
+			},
+			wantCfg: Config{
+				RecordCount: -1,
+				Format:      FormatRaw,
+				PayloadFile: "/path/to/file.txt",
+			},
+		},
+		{
+			name: "payload file, raw format",
+			input: map[string]string{
+				Format:      FormatRaw,
+				PayloadFile: "/path/to/file.txt",
+			},
+			wantCfg: Config{
+				RecordCount: -1,
+				Format:      FormatRaw,
+				PayloadFile: "/path/to/file.txt",
+			},
+		},
+	}
 
-func TestParse_FormatStructured_PayloadFile(t *testing.T) {
-	is := is.New(t)
-	_, err := Parse(map[string]string{
-		"format":      FormatStructured,
-		"payloadFile": "/path/to/file.txt",
-	})
-	is.True(err != nil)
-	is.Equal("payload file can only go with raw format", err.Error())
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			is := is.New(t)
+			cfg, err := Parse(tc.input)
+			if tc.wantErr != "" {
+				is.True(err != nil)
+				is.Equal(tc.wantErr, err.Error())
+			} else {
+				is.NoErr(err)
+				is.Equal(tc.wantCfg, cfg)
+			}
+
+		})
+	}
 }
 
 func TestParseFields_RequiredNotPresent(t *testing.T) {
