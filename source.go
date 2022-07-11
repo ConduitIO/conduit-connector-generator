@@ -19,11 +19,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"math/rand"
 	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/google/uuid"
 )
 
 // Source connector
