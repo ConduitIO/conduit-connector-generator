@@ -24,10 +24,10 @@ import (
 func TestParseFull(t *testing.T) {
 	is := is.New(t)
 	underTest, err := Parse(map[string]string{
-		"recordCount": "-1",
-		"readTime":    "5s",
-		"fields":      "id:int,name:string,joined:time,admin:bool",
-		"format":      FormatRaw,
+		RecordCount: "-1",
+		ReadTime:    "5s",
+		Fields:      "id:int,name:string,joined:time,admin:bool",
+		Format:      FormatRaw,
 	})
 	is.NoErr(err)
 	is.Equal(int64(-1), underTest.RecordCount)
@@ -54,7 +54,7 @@ func TestParse_PayloadFile(t *testing.T) {
 		{
 			name: "payload file can only go with raw format",
 			input: map[string]string{
-				"format":      FormatStructured,
+				Format:        FormatStructured,
 				"payloadFile": "/path/to/file.txt",
 			},
 			wantErr: "payload file can only go with raw format",
@@ -104,8 +104,8 @@ func TestParse_PayloadFile(t *testing.T) {
 func TestParseFields_RequiredNotPresent(t *testing.T) {
 	is := is.New(t)
 	_, err := Parse(map[string]string{
-		"recordCount": "100",
-		"readTime":    "5s",
+		RecordCount: "100",
+		ReadTime:    "5s",
 	})
 	is.True(err != nil)
 	is.Equal("either fields or a payload need to be specified", err.Error())
@@ -114,7 +114,7 @@ func TestParseFields_RequiredNotPresent(t *testing.T) {
 func TestParseFields_OptionalNotPresent(t *testing.T) {
 	is := is.New(t)
 	_, err := Parse(map[string]string{
-		"fields": "a:int",
+		Fields: "a:int",
 	})
 	is.NoErr(err)
 }
@@ -122,7 +122,7 @@ func TestParseFields_OptionalNotPresent(t *testing.T) {
 func TestParseFields_MalformedFields_NoType(t *testing.T) {
 	is := is.New(t)
 	_, err := Parse(map[string]string{
-		"fields": "abc:",
+		Fields: "abc:",
 	})
 	is.True(err != nil)
 	is.Equal(`failed parsing field spec: invalid field spec "abc:"`, err.Error())
@@ -131,7 +131,7 @@ func TestParseFields_MalformedFields_NoType(t *testing.T) {
 func TestParseFields_MalformedFields_NameOnly(t *testing.T) {
 	is := is.New(t)
 	_, err := Parse(map[string]string{
-		"fields": "abc",
+		Fields: "abc",
 	})
 	is.True(err != nil)
 	is.Equal(`failed parsing field spec: invalid field spec "abc"`, err.Error())
@@ -147,8 +147,8 @@ func TestParseFormat(t *testing.T) {
 		{
 			name: "parse 'raw'",
 			input: map[string]string{
-				"fields": "id:int",
-				"format": FormatRaw,
+				Fields: "id:int",
+				Format: FormatRaw,
 			},
 			expErr: "",
 			expVal: FormatRaw,
@@ -156,8 +156,8 @@ func TestParseFormat(t *testing.T) {
 		{
 			name: "parse 'structured'",
 			input: map[string]string{
-				"fields": "id:int",
-				"format": FormatStructured,
+				Fields: "id:int",
+				Format: FormatStructured,
 			},
 			expErr: "",
 			expVal: FormatStructured,
@@ -165,7 +165,7 @@ func TestParseFormat(t *testing.T) {
 		{
 			name: "default is 'raw' when no value present",
 			input: map[string]string{
-				"fields": "id:int",
+				Fields: "id:int",
 			},
 			expErr: "",
 			expVal: FormatRaw,
@@ -173,8 +173,8 @@ func TestParseFormat(t *testing.T) {
 		{
 			name: "default is 'raw' when empty string present",
 			input: map[string]string{
-				"fields": "id:int",
-				"format": "",
+				Fields: "id:int",
+				Format: "",
 			},
 			expErr: "",
 			expVal: FormatRaw,
