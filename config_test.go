@@ -72,7 +72,7 @@ func TestParseFields_RequiredNotPresent(t *testing.T) {
 		"readTime":    "5s",
 	})
 	is.True(err != nil)
-	is.Equal("no fields specified", err.Error())
+	is.Equal("either fields or a payload need to be specified", err.Error())
 }
 
 func TestParseFields_OptionalNotPresent(t *testing.T) {

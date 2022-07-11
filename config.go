@@ -95,7 +95,7 @@ func Parse(config map[string]string) (Config, error) {
 		return Config{}, errors.New("cannot specify fields and payload field at the same time")
 	}
 	if len(fieldsMap) == 0 && parsed.PayloadFile == "" {
-		return Config{}, errors.New("no fields specified")
+		return Config{}, errors.New("either fields or a payload need to be specified")
 	}
 	parsed.Fields = fieldsMap
 
