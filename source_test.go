@@ -17,6 +17,7 @@ package generator
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"testing"
 	"time"
 
@@ -37,6 +38,9 @@ func TestRead_RawData(t *testing.T) {
 	})
 
 	err := underTest.Configure(context.Background(), cfg)
+	is.NoErr(err)
+
+	err = underTest.Open(context.Background(), nil)
 	is.NoErr(err)
 
 	rec, err := underTest.Read(context.Background())
@@ -69,20 +73,18 @@ func TestRead_PayloadFile(t *testing.T) {
 	err := underTest.Configure(context.Background(), cfg)
 	is.NoErr(err)
 
+	err = underTest.Open(context.Background(), nil)
+	is.NoErr(err)
+
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
 
 	v, ok := rec.Payload.(sdk.RawData)
 	is.True(ok)
 
-	recStruct := struct {
-		id     int32
-		name   string
-		joined time.Time
-		admin  bool
-	}{}
-	err = json.Unmarshal(v, &recStruct) //nolint:staticcheck // test struct
+	expected, err := ioutil.ReadFile("./source_test.go")
 	is.NoErr(err)
+	is.Equal(expected, v.Bytes())
 }
 
 func TestRead_StructuredData(t *testing.T) {
@@ -98,6 +100,9 @@ func TestRead_StructuredData(t *testing.T) {
 	})
 
 	err := underTest.Configure(context.Background(), cfg)
+	is.NoErr(err)
+
+	err = underTest.Open(context.Background(), nil)
 	is.NoErr(err)
 
 	rec, err := underTest.Read(context.Background())

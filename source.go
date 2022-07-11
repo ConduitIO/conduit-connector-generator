@@ -40,7 +40,7 @@ func NewSource() sdk.Source {
 	return &Source{}
 }
 
-func (s *Source) Configure(ctx context.Context, config map[string]string) error {
+func (s *Source) Configure(_ context.Context, config map[string]string) error {
 	parsedCfg, err := Parse(config)
 	if err != nil {
 		return fmt.Errorf("invalid config: %w", err)
@@ -50,12 +50,16 @@ func (s *Source) Configure(ctx context.Context, config map[string]string) error 
 }
 
 func (s *Source) Open(ctx context.Context, position sdk.Position) error {
+	if s.config.PayloadFile == "" {
+		return nil // nothing to start
+	}
+
 	bytes, err := ioutil.ReadFile(s.config.PayloadFile)
 	if err != nil {
-		return fmt.Errorf("failed reading payload file: %w", err)
+		return fmt.Errorf("failed reading payload file %q: %w", s.config.PayloadFile, err)
 	}
 	s.payload = bytes
-	return nil // nothing to start
+	return nil
 }
 
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
