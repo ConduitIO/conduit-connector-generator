@@ -96,7 +96,6 @@ func TestParse_PayloadFile(t *testing.T) {
 				is.NoErr(err)
 				is.Equal(tc.wantCfg, cfg)
 			}
-
 		})
 	}
 }
