@@ -27,21 +27,14 @@ import (
 
 func TestRead_RawData(t *testing.T) {
 	is := is.New(t)
-	cfg := map[string]string{
-		RecordCount: "1",
-		Fields:      "id:int,name:string,joined:time,admin:bool",
-		Format:      FormatRaw,
-	}
-	underTest := NewSource()
-	t.Cleanup(func() {
-		_ = underTest.Teardown(context.Background())
-	})
-
-	err := underTest.Configure(context.Background(), cfg)
-	is.NoErr(err)
-
-	err = underTest.Open(context.Background(), nil)
-	is.NoErr(err)
+	underTest := openTestSource(
+		t,
+		map[string]string{
+			RecordCount: "1",
+			Fields:      "id:int,name:string,joined:time,admin:bool",
+			Format:      FormatRaw,
+		},
+	)
 
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
@@ -61,20 +54,13 @@ func TestRead_RawData(t *testing.T) {
 
 func TestRead_PayloadFile(t *testing.T) {
 	is := is.New(t)
-	cfg := map[string]string{
-		RecordCount: "1",
-		PayloadFile: "./source_test.go",
-	}
-	underTest := NewSource()
-	t.Cleanup(func() {
-		_ = underTest.Teardown(context.Background())
-	})
-
-	err := underTest.Configure(context.Background(), cfg)
-	is.NoErr(err)
-
-	err = underTest.Open(context.Background(), nil)
-	is.NoErr(err)
+	underTest := openTestSource(
+		t,
+		map[string]string{
+			RecordCount: "1",
+			PayloadFile: "./source_test.go",
+		},
+	)
 
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
@@ -89,21 +75,14 @@ func TestRead_PayloadFile(t *testing.T) {
 
 func TestRead_StructuredData(t *testing.T) {
 	is := is.New(t)
-	cfg := map[string]string{
-		RecordCount: "1",
-		Fields:      "id:int,name:string,joined:time,admin:bool",
-		Format:      FormatStructured,
-	}
-	underTest := NewSource()
-	t.Cleanup(func() {
-		_ = underTest.Teardown(context.Background())
-	})
-
-	err := underTest.Configure(context.Background(), cfg)
-	is.NoErr(err)
-
-	err = underTest.Open(context.Background(), nil)
-	is.NoErr(err)
+	underTest := openTestSource(
+		t,
+		map[string]string{
+			RecordCount: "1",
+			Fields:      "id:int,name:string,joined:time,admin:bool",
+			Format:      FormatStructured,
+		},
+	)
 
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
@@ -122,4 +101,21 @@ func TestRead_StructuredData(t *testing.T) {
 	is.NoErr(err)
 	err = json.Unmarshal(bytes, &recStruct) //nolint:staticcheck // test struct
 	is.NoErr(err)
+}
+
+func openTestSource(t *testing.T, cfg map[string]string) sdk.Source {
+	is := is.New(t)
+
+	s := NewSource()
+	t.Cleanup(func() {
+		_ = s.Teardown(context.Background())
+	})
+
+	err := s.Configure(context.Background(), cfg)
+	is.NoErr(err)
+
+	err = s.Open(context.Background(), nil)
+	is.NoErr(err)
+
+	return s
 }
