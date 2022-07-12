@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"strconv"
 	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/google/uuid"
 )
 
 // Source connector
@@ -80,7 +80,7 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, err
 	}
 	return sdk.Record{
-		Position:  []byte(strconv.FormatInt(s.created, 10)),
+		Position:  []byte(uuid.New().String()),
 		Metadata:  nil,
 		Key:       sdk.RawData(fmt.Sprintf("key #%d", s.created)),
 		Payload:   data,
