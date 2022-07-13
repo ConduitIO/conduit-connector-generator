@@ -40,7 +40,7 @@ func Specification() sdk.Specification {
 			},
 			Fields: {
 				Default:     "",
-				Required:    true,
+				Required:    false,
 				Description: "A comma-separated list of name:type tokens, where type can be: int, string, time, bool.",
 			},
 			Format: {
