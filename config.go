@@ -37,6 +37,8 @@ var knownFieldTypes = []string{"int", "string", "time", "bool"}
 type Config struct {
 	RecordCount int64
 	ReadTime    time.Duration
+	SleepTime   time.Duration
+	ProduceTime time.Duration
 	Fields      map[string]string
 	Format      string
 }
