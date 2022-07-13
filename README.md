@@ -5,6 +5,10 @@
 The generator connector is one of [Conduit](https://github.com/ConduitIO/conduit) builtin plugins. It generates sample
 records using its source connector. It has no destination and trying to use that will result in an error.
 
+Note that the generator currently has no concept of resuming work. For example, if you have configured it to generate 
+100 records, let it run for some time, and then restart it (by restarting the pipeline or Conduit), then it will start 
+generating the 100 records from scratch.
+
 ### How to build it
 
 Run `make`.
