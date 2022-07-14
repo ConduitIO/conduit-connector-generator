@@ -46,6 +46,7 @@ type Config struct {
 }
 
 func Parse(config map[string]string) (Config, error) {
+	dh := durationHelper{}
 	parsed := Config{}
 	// default value
 	parsed.RecordCount = -1
@@ -57,19 +58,19 @@ func Parse(config map[string]string) (Config, error) {
 		parsed.RecordCount = recCountParsed
 	}
 
-	readTime, err := parseNonNegativeDuration(config[ReadTime], time.Duration(0))
+	readTime, err := dh.parseNonNegative(config[ReadTime], time.Duration(0))
 	if err != nil {
 		return Config{}, fmt.Errorf("invalid read time: %w", err)
 	}
 	parsed.ReadTime = readTime
 
-	sleepTime, err := parseNonNegativeDuration(config[SleepTime], time.Duration(0))
+	sleepTime, err := dh.parseNonNegative(config[SleepTime], time.Duration(0))
 	if err != nil {
 		return Config{}, fmt.Errorf("invalid sleep time: %w", err)
 	}
 	parsed.SleepTime = sleepTime
 
-	genTime, err := parsePositiveDuration(config[GenerateTime], time.Duration(0))
+	genTime, err := dh.parsePositive(config[GenerateTime], time.Duration(0))
 	if err != nil {
 		return Config{}, fmt.Errorf("invalid generate time: %w", err)
 	}
@@ -107,35 +108,6 @@ func Parse(config map[string]string) (Config, error) {
 	}
 	parsed.Fields = fieldsMap
 
-	return parsed, nil
-}
-
-// todo refactor this and parsePositive
-func parseNonNegativeDuration(s string, d time.Duration) (time.Duration, error) {
-	if s == "" {
-		return d, nil
-	}
-	parsed, err := time.ParseDuration(s)
-	if err != nil {
-		return 0, fmt.Errorf("duration cannot be parsed: %w", err)
-	}
-	if parsed < 0 {
-		return 0, errors.New("duration cannot be negative")
-	}
-	return parsed, nil
-}
-
-func parsePositiveDuration(s string, d time.Duration) (time.Duration, error) {
-	if s == "" {
-		return d, nil
-	}
-	parsed, err := time.ParseDuration(s)
-	if err != nil {
-		return 0, fmt.Errorf("duration cannot be parsed: %w", err)
-	}
-	if parsed <= 0 {
-		return 0, errors.New("duration must be positive")
-	}
 	return parsed, nil
 }
 
