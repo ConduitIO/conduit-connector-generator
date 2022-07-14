@@ -23,10 +23,12 @@ import (
 )
 
 const (
-	RecordCount = "recordCount"
-	ReadTime    = "readTime"
-	Fields      = "fields"
-	Format      = "format"
+	RecordCount  = "recordCount"
+	ReadTime     = "readTime"
+	SleepTime    = "sleepTime"
+	GenerateTime = "generateTime"
+	Fields       = "fields"
+	Format       = "format"
 
 	FormatRaw        = "raw"
 	FormatStructured = "structured"
@@ -35,12 +37,12 @@ const (
 var knownFieldTypes = []string{"int", "string", "time", "bool"}
 
 type Config struct {
-	RecordCount int64
-	ReadTime    time.Duration
-	SleepTime   time.Duration
-	ProduceTime time.Duration
-	Fields      map[string]string
-	Format      string
+	RecordCount  int64
+	ReadTime     time.Duration
+	SleepTime    time.Duration
+	GenerateTime time.Duration
+	Fields       map[string]string
+	Format       string
 }
 
 func Parse(config map[string]string) (Config, error) {
@@ -54,13 +56,25 @@ func Parse(config map[string]string) (Config, error) {
 		}
 		parsed.RecordCount = recCountParsed
 	}
-	if readTime, ok := config[ReadTime]; ok {
-		readTimeParsed, err := time.ParseDuration(readTime)
-		if err != nil || readTimeParsed < 0 {
-			return Config{}, fmt.Errorf("invalid processing time: %w", err)
-		}
-		parsed.ReadTime = readTimeParsed
+
+	readTime, err := parseNonNegativeDuration(config[ReadTime], time.Duration(0))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid read time: %w", err)
 	}
+	parsed.ReadTime = readTime
+
+	sleepTime, err := parseNonNegativeDuration(config[SleepTime], time.Duration(0))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid sleep time: %w", err)
+	}
+	parsed.SleepTime = sleepTime
+
+	genTime, err := parsePositiveDuration(config[GenerateTime], time.Duration(0))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid generate time: %w", err)
+	}
+	parsed.GenerateTime = genTime
+
 	parsed.Format = FormatRaw // default
 	switch config[Format] {
 	case FormatRaw, FormatStructured:
@@ -93,6 +107,35 @@ func Parse(config map[string]string) (Config, error) {
 	}
 	parsed.Fields = fieldsMap
 
+	return parsed, nil
+}
+
+// todo refactor this and parsePositive
+func parseNonNegativeDuration(s string, d time.Duration) (time.Duration, error) {
+	if s == "" {
+		return d, nil
+	}
+	parsed, err := time.ParseDuration(s)
+	if err != nil {
+		return 0, fmt.Errorf("duration cannot be parsed: %w", err)
+	}
+	if parsed < 0 {
+		return 0, errors.New("duration cannot be negative")
+	}
+	return parsed, nil
+}
+
+func parsePositiveDuration(s string, d time.Duration) (time.Duration, error) {
+	if s == "" {
+		return d, nil
+	}
+	parsed, err := time.ParseDuration(s)
+	if err != nil {
+		return 0, fmt.Errorf("duration cannot be parsed: %w", err)
+	}
+	if parsed <= 0 {
+		return 0, errors.New("duration must be positive")
+	}
 	return parsed, nil
 }
 

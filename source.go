@@ -30,9 +30,9 @@ import (
 type Source struct {
 	sdk.UnimplementedSource
 
-	created      int64
-	produceUntil time.Time
-	Config       Config
+	created       int64
+	generateUntil time.Time
+	Config        Config
 }
 
 func NewSource() sdk.Source {
@@ -60,12 +60,12 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	}
 	s.created++
 
-	if time.Now().After(s.produceUntil) {
+	if s.shouldSleep() {
 		err := s.sleep(ctx, s.Config.SleepTime)
 		if err != nil {
 			return sdk.Record{}, err
 		}
-		s.produceUntil = time.Now().Add(s.Config.ProduceTime)
+		s.generateUntil = time.Now().Add(s.Config.GenerateTime)
 	}
 
 	err := s.sleep(ctx, s.Config.ReadTime)
@@ -84,6 +84,13 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		Payload:   data,
 		CreatedAt: time.Now(),
 	}, nil
+}
+
+func (s *Source) shouldSleep() bool {
+	if s.Config.SleepTime == 0 {
+		return false
+	}
+	return time.Now().After(s.generateUntil)
 }
 
 func (s *Source) sleep(ctx context.Context, duration time.Duration) error {

@@ -21,6 +21,14 @@ import (
 	"github.com/matryer/is"
 )
 
+type fieldTest[T interface{}] struct {
+	name   string
+	input  map[string]string
+	expErr string
+	expVal T
+	getter func(Config) T
+}
+
 func TestParseFull(t *testing.T) {
 	is := is.New(t)
 	underTest, err := Parse(map[string]string{
@@ -126,6 +134,86 @@ func TestParseFormat(t *testing.T) {
 				is.True(err == nil)
 				is.Equal(tc.expVal, parsed.Format)
 			}
+		})
+	}
+}
+
+func TestParse_Durations(t *testing.T) {
+	testCases := []fieldTest[time.Duration]{
+		{
+			name: "default read time is 0s",
+			input: map[string]string{
+				Fields: "id:int",
+			},
+			expErr: "",
+			expVal: time.Duration(0),
+			getter: func(cfg Config) time.Duration { return cfg.ReadTime },
+		},
+		{
+			name: "negative read time not allowed",
+			input: map[string]string{
+				Fields:   "id:int",
+				ReadTime: "-1s",
+			},
+			expErr: "invalid read time: duration cannot be negative",
+			expVal: time.Duration(0),
+			getter: func(cfg Config) time.Duration { return cfg.ReadTime },
+		},
+		{
+			name: "default sleep time is 0s",
+			input: map[string]string{
+				Fields: "id:int",
+			},
+			expErr: "",
+			expVal: time.Duration(0),
+			getter: func(cfg Config) time.Duration { return cfg.SleepTime },
+		},
+		{
+			name: "negative sleep time not allowed",
+			input: map[string]string{
+				Fields:    "id:int",
+				SleepTime: "-1s",
+			},
+			expErr: "invalid sleep time: duration cannot be negative",
+			expVal: time.Duration(0),
+			getter: func(cfg Config) time.Duration { return cfg.SleepTime },
+		},
+		{
+			name: "negative generate time not allowed",
+			input: map[string]string{
+				Fields:       "id:int",
+				GenerateTime: "-1s",
+			},
+			expErr: "invalid generate time: duration must be positive",
+			expVal: time.Duration(0),
+			getter: func(cfg Config) time.Duration { return cfg.GenerateTime },
+		},
+		{
+			name: "generate time 0 not allowed",
+			input: map[string]string{
+				Fields:       "id:int",
+				GenerateTime: "0ms",
+			},
+			expErr: "invalid generate time: duration must be positive",
+			expVal: time.Duration(0),
+			getter: func(cfg Config) time.Duration { return cfg.GenerateTime },
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			is := is.New(t)
+
+			parsed, err := Parse(tc.input)
+			if tc.expErr != "" {
+				is.True(err != nil)              // expected error
+				is.Equal(tc.expErr, err.Error()) // expected different error
+			} else {
+				is.True(err == nil)                  // expected no error
+				is.Equal(tc.expVal, parsed.ReadTime) // expected different read time
+			}
+
 		})
 	}
 }

@@ -88,3 +88,42 @@ func TestRead_StructuredData(t *testing.T) {
 	err = json.Unmarshal(bytes, &recStruct) //nolint:staticcheck // test struct
 	is.NoErr(err)
 }
+
+func TestSource_Read_SleepGenerate(t *testing.T) {
+	is := is.New(t)
+	cfg := map[string]string{
+		Fields:       "id:int",
+		Format:       FormatRaw,
+		ReadTime:     "10ms",
+		SleepTime:    "200ms",
+		GenerateTime: "50ms",
+	}
+
+	underTest := NewSource()
+	t.Cleanup(func() {
+		_ = underTest.Teardown(context.Background())
+	})
+
+	err := underTest.Configure(context.Background(), cfg)
+	is.NoErr(err)
+
+	// todo prevent test from hanging
+	// first read: sleep time + read time + little bit of buffer
+	start := time.Now()
+	_, err = underTest.Read(context.Background())
+	duration := time.Now().Sub(start)
+
+	is.NoErr(err)
+	is.True(duration < 220*time.Millisecond)  // read took too long
+	is.True(duration >= 210*time.Millisecond) // expected source to sleep for given time
+
+	start = time.Now()
+	for i := 1; i <= 5; i++ {
+		_, err = underTest.Read(context.Background())
+		is.NoErr(err)
+	}
+	duration = time.Now().Sub(start)
+
+	is.True(duration < 50*time.Millisecond)  // reads took too long
+	is.True(duration >= 40*time.Millisecond) // expected source to generate for given time
+}
