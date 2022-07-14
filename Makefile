@@ -6,3 +6,5 @@ build:
 test:
 	go test $(GOTEST_FLAGS) -race ./...
 
+lint:
+	golangci-lint run

@@ -111,7 +111,7 @@ func TestSource_Read_SleepGenerate(t *testing.T) {
 	// first read: sleep time + read time + little bit of buffer
 	start := time.Now()
 	_, err = underTest.Read(context.Background())
-	duration := time.Now().Sub(start)
+	duration := time.Since(start)
 
 	is.NoErr(err)
 	is.True(duration < 220*time.Millisecond)  // read took too long
@@ -122,7 +122,7 @@ func TestSource_Read_SleepGenerate(t *testing.T) {
 		_, err = underTest.Read(context.Background())
 		is.NoErr(err)
 	}
-	duration = time.Now().Sub(start)
+	duration = time.Since(start)
 
 	is.True(duration < 50*time.Millisecond)  // reads took too long
 	is.True(duration >= 40*time.Millisecond) // expected source to generate for given time

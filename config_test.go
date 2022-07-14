@@ -213,7 +213,6 @@ func TestParse_Durations(t *testing.T) {
 				is.True(err == nil)                  // expected no error
 				is.Equal(tc.expVal, parsed.ReadTime) // expected different read time
 			}
-
 		})
 	}
 }
