@@ -17,6 +17,7 @@ package generator
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -70,7 +71,7 @@ func Parse(config map[string]string) (Config, error) {
 	}
 	parsed.SleepTime = sleepTime
 
-	genTime, err := dh.parsePositive(config[GenerateTime], time.Duration(0))
+	genTime, err := dh.parsePositive(config[GenerateTime], time.Duration(math.MaxInt64))
 	if err != nil {
 		return Config{}, fmt.Errorf("invalid generate time: %w", err)
 	}
