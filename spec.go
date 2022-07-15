@@ -38,20 +38,17 @@ func Specification() sdk.Specification {
 				Required:    false,
 				Description: "The time it takes to 'read' a record.",
 			},
-			Fields: {
-				Default:     "",
-				Required:    false,
-				Description: "A comma-separated list of name:type tokens, where type can be: int, string, time, bool.",
-			},
-			Format: {
+			FormatType: {
 				Default:     FormatRaw,
 				Required:    false,
-				Description: "Format of the generated payload data: raw, structured.",
+				Description: "Format of the generated payload data: raw, structured, file.",
 			},
-			PayloadFile: {
-				Default:     "",
-				Required:    false,
-				Description: "Path to file containing the payload for generated records.",
+			FormatOptions: {
+				Default:  "",
+				Required: false,
+				Description: "Options for the format type selected, which are:" +
+					"1. For raw and structured: a comma-separated list of name:type tokens, where type can be: int, string, time, bool." +
+					"2. For the file format: a path to the file.",
 			},
 		},
 	}

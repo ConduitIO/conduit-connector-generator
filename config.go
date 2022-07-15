@@ -15,7 +15,6 @@
 package generator
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -23,27 +22,34 @@ import (
 )
 
 const (
-	RecordCount = "recordCount"
-	ReadTime    = "readTime"
-	Fields      = "fields"
-	Format      = "format"
-	PayloadFile = "payloadFile"
+	RecordCount   = "recordCount"
+	ReadTime      = "readTime"
+	FormatType    = "format.type"
+	FormatOptions = "format.options"
 
 	FormatRaw        = "raw"
 	FormatStructured = "structured"
+	FormatFile       = "file"
 )
 
-var knownFieldTypes = []string{"int", "string", "time", "bool"}
+var (
+	knownFieldTypes = []string{"int", "string", "time", "bool"}
+	requiredFields  = []string{FormatType, FormatOptions}
+)
 
 type Config struct {
 	RecordCount int64
 	ReadTime    time.Duration
-	Fields      map[string]string
-	Format      string
-	PayloadFile string
+
+	FormatType    string
+	FormatOptions string
 }
 
 func Parse(config map[string]string) (Config, error) {
+	err := checkRequired(config)
+	if err != nil {
+		return Config{}, err
+	}
 	parsed := Config{}
 
 	// parse record count
@@ -66,23 +72,12 @@ func Parse(config map[string]string) (Config, error) {
 		parsed.ReadTime = readTimeParsed
 	}
 
-	// parse payload file
-	parsed.PayloadFile = config[PayloadFile]
-
 	// parse payload format
-	parsed.Format = FormatRaw // default
-	switch config[Format] {
-	case FormatRaw, FormatStructured:
-		parsed.Format = config[Format]
-	case "":
-		// leave default
+	switch config[FormatType] {
+	case FormatRaw, FormatStructured, FormatFile:
+		parsed.FormatType = config[FormatType]
 	default:
-		return Config{}, fmt.Errorf("unknown payload format %q", config[Format])
-	}
-
-	// check if the PayloadFile parameter is compatible with other parameters
-	if parsed.PayloadFile != "" && parsed.Format == FormatStructured {
-		return Config{}, errors.New("payload file can only go with raw format")
+		return Config{}, fmt.Errorf("unknown payload format %q", config[FormatType])
 	}
 
 	// parse fields
@@ -91,19 +86,27 @@ func Parse(config map[string]string) (Config, error) {
 		return Config{}, fmt.Errorf("failed parsing field spec: %w", err)
 	}
 
-	if len(fieldsMap) != 0 && parsed.PayloadFile != "" {
-		return Config{}, errors.New("cannot specify fields and payload field at the same time")
-	}
-	if len(fieldsMap) == 0 && parsed.PayloadFile == "" {
-		return Config{}, errors.New("either fields or a payload need to be specified")
-	}
 	parsed.Fields = fieldsMap
 
 	return parsed, nil
 }
 
+func checkRequired(cfg map[string]string) error {
+	var missing []string
+	for _, reqKey := range requiredFields {
+		_, exists := cfg[reqKey]
+		if !exists {
+			missing = append(missing, reqKey)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("required parameters missing %v", missing)
+	}
+	return nil
+}
+
 func parseFieldsMap(config map[string]string) (map[string]string, error) {
-	fieldsConcat := config[Fields]
+	fieldsConcat := config[FormatOptions]
 	if fieldsConcat == "" {
 		return nil, nil
 	}
