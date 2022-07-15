@@ -29,7 +29,7 @@ type Source struct {
 
 	created          int64
 	config           Config
-	payloadGenerator payloadGenerator
+	payloadGenerator PayloadGenerator
 }
 
 func NewSource() sdk.Source {
@@ -62,7 +62,7 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, err
 	}
 
-	data, err := s.payloadGenerator.generate()
+	data, err := s.payloadGenerator.Generate()
 	if err != nil {
 		return sdk.Record{}, err
 	}

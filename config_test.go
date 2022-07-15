@@ -24,10 +24,10 @@ import (
 func TestParseFull(t *testing.T) {
 	is := is.New(t)
 	underTest, err := Parse(map[string]string{
-		RecordCount: "-1",
-		ReadTime:    "5s",
-		Fields:      "id:int,name:string,joined:time,admin:bool",
-		Format:      FormatRaw,
+		RecordCount:   "-1",
+		ReadTime:      "5s",
+		FormatType:    FormatRaw,
+		FormatOptions: "id:int,name:string,joined:time,admin:bool",
 	})
 	is.NoErr(err)
 	is.Equal(int64(-1), underTest.RecordCount)

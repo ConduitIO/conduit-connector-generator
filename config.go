@@ -42,7 +42,7 @@ type Config struct {
 
 	FormatType       string
 	FormatOptions    string
-	PayloadGenerator payloadGenerator
+	PayloadGenerator PayloadGenerator
 }
 
 func Parse(config map[string]string) (Config, error) {
@@ -72,15 +72,15 @@ func Parse(config map[string]string) (Config, error) {
 		parsed.ReadTime = readTimeParsed
 	}
 
-	// parse payload format
+	// check if it's a recognized format
 	switch config[FormatType] {
 	case FormatRaw, FormatStructured, FormatFile:
-		fallthrough
+		break
 	default:
 		return Config{}, fmt.Errorf("unknown payload format %q", config[FormatType])
 	}
 
-	pg, err := newPayloadGenerator(config[FormatType], config[FormatOptions])
+	pg, err := NewPayloadGenerator(config[FormatType], config[FormatOptions])
 	if err != nil {
 		return Config{}, fmt.Errorf("failed configuring payload generator: %w", err)
 	}

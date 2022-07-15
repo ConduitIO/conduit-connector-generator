@@ -25,8 +25,8 @@ import (
 	"time"
 )
 
-type payloadGenerator interface {
-	generate() (sdk.Data, error)
+type PayloadGenerator interface {
+	Generate() (sdk.Data, error)
 }
 
 type filePayloadGenerator struct {
@@ -34,7 +34,7 @@ type filePayloadGenerator struct {
 	fileBytes []byte
 }
 
-func (f filePayloadGenerator) generate() (sdk.Data, error) {
+func (f *filePayloadGenerator) Generate() (sdk.Data, error) {
 	if f.fileBytes == nil {
 		bytes, err := ioutil.ReadFile(f.path)
 		if err != nil {
@@ -46,14 +46,20 @@ func (f filePayloadGenerator) generate() (sdk.Data, error) {
 }
 
 type structuredGenerator struct {
-	fields map[string]string
-	format string
+	fields  map[string]string
+	format  string
+	counter int64
 }
 
-func (s *structuredGenerator) newRecord(i int64) map[string]interface{} {
+func (s *structuredGenerator) Generate() (sdk.Data, error) {
+	return s.toData(s.newRecord())
+}
+
+func (s *structuredGenerator) newRecord() map[string]interface{} {
+	s.counter++
 	rec := make(map[string]interface{})
 	for name, typeString := range s.fields {
-		rec[name] = s.newDummyValue(typeString, i)
+		rec[name] = s.newDummyValue(typeString, s.counter)
 	}
 	return rec
 }
@@ -92,21 +98,16 @@ func (s *structuredGenerator) toRawData(rec map[string]interface{}) (sdk.RawData
 	return bytes, nil
 }
 
-func (s structuredGenerator) generate() (sdk.Data, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func newPayloadGenerator(formatType string, formatOptions string) (payloadGenerator, error) {
+func NewPayloadGenerator(formatType string, formatOptions string) (PayloadGenerator, error) {
 	switch formatType {
 	case FormatFile:
-		return filePayloadGenerator{path: formatOptions}, nil
+		return &filePayloadGenerator{path: formatOptions}, nil
 	case FormatRaw, FormatStructured:
 		fields, err := parseFields(formatOptions)
 		if err != nil {
 			return nil, fmt.Errorf("failed parsing field spec: %w", err)
 		}
-		return structuredGenerator{
+		return &structuredGenerator{
 			fields: fields,
 			format: formatType,
 		}, nil
