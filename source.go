@@ -16,11 +16,7 @@ package generator
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
-	"math/rand"
 	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -31,9 +27,9 @@ import (
 type Source struct {
 	sdk.UnimplementedSource
 
-	created int64
-	payload []byte
-	config  Config
+	created          int64
+	config           Config
+	payloadGenerator payloadGenerator
 }
 
 func NewSource() sdk.Source {
@@ -50,15 +46,6 @@ func (s *Source) Configure(_ context.Context, config map[string]string) error {
 }
 
 func (s *Source) Open(ctx context.Context, position sdk.Position) error {
-	if s.config.PayloadFile == "" {
-		return nil // nothing to start
-	}
-
-	bytes, err := ioutil.ReadFile(s.config.PayloadFile)
-	if err != nil {
-		return fmt.Errorf("failed reading payload file %q: %w", s.config.PayloadFile, err)
-	}
-	s.payload = bytes
 	return nil
 }
 
@@ -75,7 +62,7 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, err
 	}
 
-	data, err := s.generatePayload()
+	data, err := s.payloadGenerator.generate()
 	if err != nil {
 		return sdk.Record{}, err
 	}
@@ -116,53 +103,4 @@ func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
 
 func (s *Source) Teardown(ctx context.Context) error {
 	return nil // nothing to stop
-}
-
-func (s *Source) newRecord(i int64) map[string]interface{} {
-	rec := make(map[string]interface{})
-	for name, typeString := range s.config.Fields {
-		rec[name] = s.newDummyValue(typeString, i)
-	}
-	return rec
-}
-
-func (s *Source) newDummyValue(typeString string, i int64) interface{} {
-	switch typeString {
-	case "int":
-		return rand.Int31() //nolint:gosec // security not important here
-	case "string":
-		return fmt.Sprintf("string %v", i)
-	case "time":
-		return time.Now()
-	case "bool":
-		return rand.Int()%2 == 0 //nolint:gosec // security not important here
-	default:
-		panic(errors.New("invalid field"))
-	}
-}
-
-func (s *Source) toData(rec map[string]interface{}) (sdk.Data, error) {
-	switch s.config.Format {
-	case FormatRaw:
-		return s.toRawData(rec)
-	case FormatStructured:
-		return sdk.StructuredData(rec), nil
-	default:
-		return nil, fmt.Errorf("unknown format request %q", s.config.Format)
-	}
-}
-
-func (s *Source) toRawData(rec map[string]interface{}) (sdk.RawData, error) {
-	bytes, err := json.Marshal(rec)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't serialize data: %w", err)
-	}
-	return bytes, nil
-}
-
-func (s *Source) generatePayload() (sdk.Data, error) {
-	if s.payload != nil {
-		return sdk.RawData(s.payload), nil
-	}
-	return s.toData(s.newRecord(s.created))
 }

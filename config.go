@@ -17,7 +17,6 @@ package generator
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -41,8 +40,9 @@ type Config struct {
 	RecordCount int64
 	ReadTime    time.Duration
 
-	FormatType    string
-	FormatOptions string
+	FormatType       string
+	FormatOptions    string
+	PayloadGenerator payloadGenerator
 }
 
 func Parse(config map[string]string) (Config, error) {
@@ -75,18 +75,16 @@ func Parse(config map[string]string) (Config, error) {
 	// parse payload format
 	switch config[FormatType] {
 	case FormatRaw, FormatStructured, FormatFile:
-		parsed.FormatType = config[FormatType]
+		fallthrough
 	default:
 		return Config{}, fmt.Errorf("unknown payload format %q", config[FormatType])
 	}
 
-	// parse fields
-	fieldsMap, err := parseFieldsMap(config)
+	pg, err := newPayloadGenerator(config[FormatType], config[FormatOptions])
 	if err != nil {
-		return Config{}, fmt.Errorf("failed parsing field spec: %w", err)
+		return Config{}, fmt.Errorf("failed configuring payload generator: %w", err)
 	}
-
-	parsed.Fields = fieldsMap
+	parsed.PayloadGenerator = pg
 
 	return parsed, nil
 }
@@ -103,40 +101,4 @@ func checkRequired(cfg map[string]string) error {
 		return fmt.Errorf("required parameters missing %v", missing)
 	}
 	return nil
-}
-
-func parseFieldsMap(config map[string]string) (map[string]string, error) {
-	fieldsConcat := config[FormatOptions]
-	if fieldsConcat == "" {
-		return nil, nil
-	}
-	fieldsMap := map[string]string{}
-	fields := strings.Split(fieldsConcat, ",")
-	for _, field := range fields {
-		if strings.Trim(field, " ") == "" {
-			return nil, fmt.Errorf("got empty field spec in %q", field)
-		}
-		fieldSpec := strings.Split(field, ":")
-		if validFieldSpec(fieldSpec) {
-			return nil, fmt.Errorf("invalid field spec %q", field)
-		}
-		if !knownType(fieldSpec[1]) {
-			return nil, fmt.Errorf("unknown data type in %q", field)
-		}
-		fieldsMap[fieldSpec[0]] = fieldSpec[1]
-	}
-	return fieldsMap, nil
-}
-
-func validFieldSpec(fieldSpec []string) bool {
-	return len(fieldSpec) != 2 || strings.Trim(fieldSpec[0], " ") == "" || strings.Trim(fieldSpec[1], " ") == ""
-}
-
-func knownType(typeString string) bool {
-	for _, t := range knownFieldTypes {
-		if strings.ToLower(typeString) == t {
-			return true
-		}
-	}
-	return false
 }
