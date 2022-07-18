@@ -20,16 +20,15 @@ import (
 	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
-	"github.com/google/uuid"
 )
 
 // Source connector
 type Source struct {
 	sdk.UnimplementedSource
 
-	created          int64
-	config           Config
-	payloadGenerator PayloadGenerator
+	created         int64
+	config          Config
+	recordGenerator RecordGenerator
 }
 
 func NewSource() sdk.Source {
@@ -46,6 +45,7 @@ func (s *Source) Configure(_ context.Context, config map[string]string) error {
 }
 
 func (s *Source) Open(ctx context.Context, position sdk.Position) error {
+	s.recordGenerator = NewRecordGenerator(s.config.RecordConfig)
 	return nil
 }
 
@@ -62,17 +62,11 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, err
 	}
 
-	data, err := s.payloadGenerator.Generate()
+	rec, err := s.recordGenerator()
 	if err != nil {
 		return sdk.Record{}, err
 	}
-	return sdk.Record{
-		Position:  []byte(uuid.New().String()),
-		Metadata:  nil,
-		Key:       sdk.RawData(fmt.Sprintf("key #%d", s.created)),
-		Payload:   data,
-		CreatedAt: time.Now(),
-	}, nil
+	return rec, nil
 }
 
 func (s *Source) sleep(ctx context.Context, duration time.Duration) error {

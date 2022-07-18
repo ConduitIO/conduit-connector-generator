@@ -17,6 +17,7 @@ package generator
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -36,13 +37,39 @@ var (
 	requiredFields  = []string{FormatType, FormatOptions}
 )
 
+type RecordConfig struct {
+	FormatType    string
+	FormatOptions map[string]interface{}
+}
+
+func ParseRecordConfig(formatType, formatOptions string) (RecordConfig, error) {
+	c := RecordConfig{
+		FormatOptions: make(map[string]interface{}),
+	}
+	// check if it's a recognized format
+	switch formatType {
+	case FormatRaw:
+		c.FormatType = FormatRaw
+		c.FormatOptions["path"] = formatOptions
+	case FormatStructured, FormatFile:
+		c.FormatType = formatType
+		fields, err := parseFields(formatOptions)
+		if err != nil {
+			return RecordConfig{}, fmt.Errorf("failed parsing fields: %w", err)
+		}
+		c.FormatOptions["fields"] = fields
+	default:
+		return RecordConfig{}, fmt.Errorf("unknown payload format %q", formatType)
+	}
+
+	return c, nil
+}
+
 type Config struct {
 	RecordCount int64
 	ReadTime    time.Duration
 
-	FormatType       string
-	FormatOptions    string
-	PayloadGenerator PayloadGenerator
+	RecordConfig RecordConfig
 }
 
 func Parse(config map[string]string) (Config, error) {
@@ -72,19 +99,11 @@ func Parse(config map[string]string) (Config, error) {
 		parsed.ReadTime = readTimeParsed
 	}
 
-	// check if it's a recognized format
-	switch config[FormatType] {
-	case FormatRaw, FormatStructured, FormatFile:
-		break
-	default:
-		return Config{}, fmt.Errorf("unknown payload format %q", config[FormatType])
-	}
-
-	pg, err := NewPayloadGenerator(config[FormatType], config[FormatOptions])
+	rc, err := ParseRecordConfig(config[FormatType], config[FormatOptions])
 	if err != nil {
 		return Config{}, fmt.Errorf("failed configuring payload generator: %w", err)
 	}
-	parsed.PayloadGenerator = pg
+	parsed.RecordConfig = rc
 
 	return parsed, nil
 }
@@ -101,4 +120,41 @@ func checkRequired(cfg map[string]string) error {
 		return fmt.Errorf("required parameters missing %v", missing)
 	}
 	return nil
+}
+
+func parseFields(fieldsConcat string) (map[string]string, error) {
+	if fieldsConcat == "" {
+		return nil, nil
+	}
+	fieldsMap := map[string]string{}
+	fields := strings.Split(fieldsConcat, ",")
+	for _, field := range fields {
+		if strings.Trim(field, " ") == "" {
+			return nil, fmt.Errorf("got empty field spec in %q", field)
+		}
+		fieldSpec := strings.Split(field, ":")
+		if validFieldSpec(fieldSpec) {
+			return nil, fmt.Errorf("invalid field spec %q", field)
+		}
+		if !knownType(fieldSpec[1]) {
+			return nil, fmt.Errorf("unknown data type in %q", field)
+		}
+		fieldsMap[fieldSpec[0]] = fieldSpec[1]
+	}
+	return fieldsMap, nil
+}
+
+func validFieldSpec(fieldSpec []string) bool {
+	return len(fieldSpec) != 2 ||
+		strings.Trim(fieldSpec[0], " ") == "" ||
+		strings.Trim(fieldSpec[1], " ") == ""
+}
+
+func knownType(typeString string) bool {
+	for _, t := range knownFieldTypes {
+		if strings.ToLower(typeString) == t {
+			return true
+		}
+	}
+	return false
 }
