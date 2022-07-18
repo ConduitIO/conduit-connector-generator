@@ -112,7 +112,7 @@ func TestSource_Read_SleepGenerate(t *testing.T) {
 		duration time.Duration
 	}
 
-	// first read: sleep time + read time + little bit of buffer
+	// first read: sleep time + read time + bit of buffer
 	results := make(chan result)
 	go func() {
 		start := time.Now()
@@ -148,6 +148,25 @@ func TestSource_Read_SleepGenerate(t *testing.T) {
 		is.NoErr(r.err)
 		is.True(r.duration >= 40*time.Millisecond) // expected source to sleep for given time
 	case <-time.After(50 * time.Millisecond):
+		is.Fail() // timed out waiting for record
+	}
+
+	// one more read, to verify that we got through another sleep cycle,
+	// and started generating records again
+	// sleep time + read time + bit of buffer
+	results = make(chan result)
+	go func() {
+		start := time.Now()
+		_, err := underTest.Read(context.Background())
+
+		results <- result{err: err, duration: time.Since(start)}
+	}()
+
+	select {
+	case r := <-results:
+		is.NoErr(r.err)
+		is.True(r.duration >= 210*time.Millisecond) // expected source to sleep for given time
+	case <-time.After(220 * time.Millisecond):
 		is.Fail() // timed out waiting for record
 	}
 }
