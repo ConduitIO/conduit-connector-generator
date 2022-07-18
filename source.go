@@ -29,6 +29,7 @@ type Source struct {
 
 	created          int64
 	config           Config
+	generateUntil    time.Time
 	payloadGenerator PayloadGenerator
 }
 
@@ -57,9 +58,12 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	}
 	s.created++
 
-	err := s.sleep(ctx, s.config.ReadTime)
-	if err != nil {
-		return sdk.Record{}, err
+	if s.shouldSleep() {
+		err := s.sleep(ctx, s.config.SleepTime)
+		if err != nil {
+			return sdk.Record{}, err
+		}
+		s.generateUntil = time.Now().Add(s.config.GenerateTime)
 	}
 
 	data, err := s.payloadGenerator.Generate()
@@ -73,6 +77,13 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		Payload:   data,
 		CreatedAt: time.Now(),
 	}, nil
+}
+
+func (s *Source) shouldSleep() bool {
+	if s.config.SleepTime == 0 {
+		return false
+	}
+	return time.Now().After(s.generateUntil)
 }
 
 func (s *Source) sleep(ctx context.Context, duration time.Duration) error {

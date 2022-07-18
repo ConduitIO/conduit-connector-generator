@@ -16,15 +16,19 @@ package generator
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 )
 
 const (
-	RecordCount   = "recordCount"
-	ReadTime      = "readTime"
 	FormatType    = "format.type"
 	FormatOptions = "format.options"
+
+	RecordCount  = "recordCount"
+	ReadTime     = "readTime"
+	SleepTime    = "sleepTime"
+	GenerateTime = "generateTime"
 
 	FormatRaw        = "raw"
 	FormatStructured = "structured"
@@ -37,8 +41,10 @@ var (
 )
 
 type Config struct {
-	RecordCount int64
-	ReadTime    time.Duration
+	RecordCount  int64
+	ReadTime     time.Duration
+	SleepTime    time.Duration
+	GenerateTime time.Duration
 
 	FormatType       string
 	FormatOptions    string
@@ -50,6 +56,8 @@ func Parse(config map[string]string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+
+	dh := durationHelper{}
 	parsed := Config{}
 
 	// parse record count
@@ -71,6 +79,24 @@ func Parse(config map[string]string) (Config, error) {
 		}
 		parsed.ReadTime = readTimeParsed
 	}
+
+	readTime, err := dh.parseNonNegative(config[ReadTime], time.Duration(0))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid read time: %w", err)
+	}
+	parsed.ReadTime = readTime
+
+	sleepTime, err := dh.parseNonNegative(config[SleepTime], time.Duration(0))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid sleep time: %w", err)
+	}
+	parsed.SleepTime = sleepTime
+
+	genTime, err := dh.parsePositive(config[GenerateTime], time.Duration(math.MaxInt64))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid generate time: %w", err)
+	}
+	parsed.GenerateTime = genTime
 
 	// check if it's a recognized format
 	switch config[FormatType] {

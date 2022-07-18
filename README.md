@@ -26,6 +26,7 @@ The connector is great for getting started with Conduit but also for certain typ
 
 ### Configuration
 
+<<<<<<< HEAD
 | name        | description                                                                                                                                        | required | Default | Example                                                                                                 |
 |-------------|----------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------|---------------------------------------------------------------------------------------------------------|
 | recordCount | Number of records to be generated. -1 for no limit.                                                                                                | false    | "-1"    | 15 (generates 15 records)                                                                               |
@@ -33,3 +34,13 @@ The connector is great for getting started with Conduit but also for certain typ
 | fields      | A comma-separated list of name:type tokens, <br/>where type can be: int, string, time, bool.                                                       | true     | ""      | id:int,name:string <br/> (generates a struct with an ID field, type int, and a name field, type string) |
 | format      | Format of the generated payload data: raw, structured.<br/> If fields are specified, then the payload will be a JSON string's byte representation. | false    | "raw"   |                                                                                                         |
 | payloadFile | Path to file containing the payload for generated records.                                                                                         | false    | ""      |                                                                                                         |
+=======
+| name         | description                                                                                | required | Default             |
+|--------------|--------------------------------------------------------------------------------------------|----------|---------------------|
+| recordCount  | Number of records to be generated. -1 for no limit.                                        | false    | "-1"                |
+| readTime     | The time it takes to 'read' a record.                                                      | false    | "0s"                |
+| sleepTime    | The time the generator 'sleeps' before it starts generating records. Must be non-negative. | false    | "0s"                |
+| generateTime | The amount of time the generator is generating records. Must be positive.                  | false    | max. duration in Go |
+| fields       | A comma-separated list of name:type tokens, where type can be: int, string, time, bool.    | true     | ""                  |
+| format       | Format of the generated payload data: raw, structured.                                     | false    | "raw"               |
+>>>>>>> haris/sleep-generate
