@@ -17,7 +17,7 @@ package generator
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
@@ -69,7 +69,7 @@ func TestRead_PayloadFile(t *testing.T) {
 	v, ok := rec.Payload.(sdk.RawData)
 	is.True(ok)
 
-	expected, err := ioutil.ReadFile("./source_test.go")
+	expected, err := os.ReadFile("./source_test.go")
 	is.NoErr(err)
 	is.Equal(expected, v.Bytes())
 }
