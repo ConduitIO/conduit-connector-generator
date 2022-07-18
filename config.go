@@ -26,8 +26,8 @@ import (
 const (
 	RecordCount  = "recordCount"
 	ReadTime     = "readTime"
-	SleepTime    = "sleepTime"
-	GenerateTime = "generateTime"
+	SleepTime    = "burst.sleepTime"
+	GenerateTime = "burst.generateTime"
 	Fields       = "fields"
 	Format       = "format"
 
