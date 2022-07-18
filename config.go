@@ -52,11 +52,11 @@ func ParseRecordConfig(formatType, formatOptions string) (RecordConfig, error) {
 		c.FormatType = FormatFile
 		c.FormatOptions["path"] = formatOptions
 	case FormatStructured, FormatRaw:
-		c.FormatType = formatType
 		fields, err := parseFields(formatOptions)
 		if err != nil {
 			return RecordConfig{}, fmt.Errorf("failed parsing fields: %w", err)
 		}
+		c.FormatType = formatType
 		c.FormatOptions["fields"] = fields
 	default:
 		return RecordConfig{}, fmt.Errorf("unknown payload format %q", formatType)
