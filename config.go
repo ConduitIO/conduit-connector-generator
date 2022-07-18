@@ -48,10 +48,10 @@ func ParseRecordConfig(formatType, formatOptions string) (RecordConfig, error) {
 	}
 	// check if it's a recognized format
 	switch formatType {
-	case FormatRaw:
-		c.FormatType = FormatRaw
+	case FormatFile:
+		c.FormatType = FormatFile
 		c.FormatOptions["path"] = formatOptions
-	case FormatStructured, FormatFile:
+	case FormatStructured, FormatRaw:
 		c.FormatType = formatType
 		fields, err := parseFields(formatOptions)
 		if err != nil {

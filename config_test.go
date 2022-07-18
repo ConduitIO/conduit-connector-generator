@@ -32,8 +32,11 @@ func TestParseFull(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(int64(-1), underTest.RecordCount)
 	is.Equal(5*time.Second, underTest.ReadTime)
-	is.Equal(map[string]string{"id": "int", "name": "string", "joined": "time", "admin": "bool"}, underTest.Fields)
-	is.Equal(FormatRaw, underTest.Format)
+	is.Equal(
+		map[string]string{"id": "int", "name": "string", "joined": "time", "admin": "bool"},
+		underTest.RecordConfig.FormatOptions["fields"],
+	)
+	is.Equal(FormatRaw, underTest.RecordConfig.FormatType)
 }
 
 func TestParse_PayloadFile(t *testing.T) {
@@ -42,47 +45,7 @@ func TestParse_PayloadFile(t *testing.T) {
 		input   map[string]string
 		wantErr string
 		wantCfg Config
-	}{
-		{
-			name: "cannot specify fields and payload field at the same time",
-			input: map[string]string{
-				Fields:      "id:int",
-				PayloadFile: "/path/to/file.txt",
-			},
-			wantErr: "cannot specify fields and payload field at the same time",
-		},
-		{
-			name: "payload file can only go with raw format",
-			input: map[string]string{
-				Format:        FormatStructured,
-				"payloadFile": "/path/to/file.txt",
-			},
-			wantErr: "payload file can only go with raw format",
-		},
-		{
-			name: "payload file, default format",
-			input: map[string]string{
-				PayloadFile: "/path/to/file.txt",
-			},
-			wantCfg: Config{
-				RecordCount: -1,
-				Format:      FormatRaw,
-				PayloadFile: "/path/to/file.txt",
-			},
-		},
-		{
-			name: "payload file, raw format",
-			input: map[string]string{
-				Format:      FormatRaw,
-				PayloadFile: "/path/to/file.txt",
-			},
-			wantCfg: Config{
-				RecordCount: -1,
-				Format:      FormatRaw,
-				PayloadFile: "/path/to/file.txt",
-			},
-		},
-	}
+	}{}
 
 	for _, tc := range testCases {
 		tc := tc
@@ -112,16 +75,15 @@ func TestParseFields_RequiredNotPresent(t *testing.T) {
 
 func TestParseFields_OptionalNotPresent(t *testing.T) {
 	is := is.New(t)
-	_, err := Parse(map[string]string{
-		Fields: "a:int",
-	})
+	_, err := Parse(map[string]string{})
 	is.NoErr(err)
 }
 
 func TestParseFields_MalformedFields_NoType(t *testing.T) {
 	is := is.New(t)
 	_, err := Parse(map[string]string{
-		Fields: "abc:",
+		FormatType:    FormatStructured,
+		FormatOptions: "abc:",
 	})
 	is.True(err != nil)
 	is.Equal(`failed parsing field spec: invalid field spec "abc:"`, err.Error())
@@ -130,68 +92,9 @@ func TestParseFields_MalformedFields_NoType(t *testing.T) {
 func TestParseFields_MalformedFields_NameOnly(t *testing.T) {
 	is := is.New(t)
 	_, err := Parse(map[string]string{
-		Fields: "abc",
+		FormatType:    FormatStructured,
+		FormatOptions: "abc",
 	})
 	is.True(err != nil)
 	is.Equal(`failed parsing field spec: invalid field spec "abc"`, err.Error())
-}
-
-func TestParseFormat(t *testing.T) {
-	testCases := []struct {
-		name   string
-		input  map[string]string
-		expErr string
-		expVal string
-	}{
-		{
-			name: "parse 'raw'",
-			input: map[string]string{
-				Fields: "id:int",
-				Format: FormatRaw,
-			},
-			expErr: "",
-			expVal: FormatRaw,
-		},
-		{
-			name: "parse 'structured'",
-			input: map[string]string{
-				Fields: "id:int",
-				Format: FormatStructured,
-			},
-			expErr: "",
-			expVal: FormatStructured,
-		},
-		{
-			name: "default is 'raw' when no value present",
-			input: map[string]string{
-				Fields: "id:int",
-			},
-			expErr: "",
-			expVal: FormatRaw,
-		},
-		{
-			name: "default is 'raw' when empty string present",
-			input: map[string]string{
-				Fields: "id:int",
-				Format: "",
-			},
-			expErr: "",
-			expVal: FormatRaw,
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			is := is.New(t)
-			parsed, err := Parse(tc.input)
-			if tc.expErr != "" {
-				is.True(err != nil)
-				is.Equal(tc.expErr, err.Error())
-			} else {
-				is.True(err == nil)
-				is.Equal(tc.expVal, parsed.Format)
-			}
-		})
-	}
 }

@@ -30,9 +30,9 @@ func TestRead_RawData(t *testing.T) {
 	underTest := openTestSource(
 		t,
 		map[string]string{
-			RecordCount: "1",
-			Fields:      "id:int,name:string,joined:time,admin:bool",
-			Format:      FormatRaw,
+			RecordCount:   "1",
+			FormatType:    FormatRaw,
+			FormatOptions: "id:int,name:string,joined:time,admin:bool",
 		},
 	)
 
@@ -57,8 +57,9 @@ func TestRead_PayloadFile(t *testing.T) {
 	underTest := openTestSource(
 		t,
 		map[string]string{
-			RecordCount: "1",
-			PayloadFile: "./source_test.go",
+			RecordCount:   "1",
+			FormatType:    FormatFile,
+			FormatOptions: "./source_test.go",
 		},
 	)
 
@@ -78,9 +79,9 @@ func TestRead_StructuredData(t *testing.T) {
 	underTest := openTestSource(
 		t,
 		map[string]string{
-			RecordCount: "1",
-			Fields:      "id:int,name:string,joined:time,admin:bool",
-			Format:      FormatStructured,
+			RecordCount:   "1",
+			FormatType:    FormatStructured,
+			FormatOptions: "id:int,name:string,joined:time,admin:bool",
 		},
 	)
 
