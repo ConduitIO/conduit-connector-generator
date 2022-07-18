@@ -18,11 +18,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	sdk "github.com/conduitio/conduit-connector-sdk"
-	"github.com/google/uuid"
 	"math/rand"
 	"os"
 	"time"
+
+	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/google/uuid"
 )
 
 type recordGenerator interface {
