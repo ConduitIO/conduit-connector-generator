@@ -66,6 +66,10 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		s.generateUntil = time.Now().Add(s.config.GenerateTime)
 	}
 
+	err := s.sleep(ctx, s.config.ReadTime)
+	if err != nil {
+		return sdk.Record{}, err
+	}
 	data, err := s.config.PayloadGenerator.Generate()
 	if err != nil {
 		return sdk.Record{}, err
