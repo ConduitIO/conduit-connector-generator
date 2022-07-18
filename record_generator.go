@@ -35,7 +35,7 @@ func NewRecordGenerator(config RecordConfig) RecordGenerator {
 		}
 		return sdk.Record{
 			Position:  []byte(uuid.New().String()),
-			Metadata:  nil,
+			Metadata:  make(map[string]string),
 			Key:       sdk.RawData(uuid.NewString()),
 			Payload:   p,
 			CreatedAt: time.Now(),
