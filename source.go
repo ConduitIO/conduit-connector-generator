@@ -62,7 +62,7 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, err
 	}
 
-	rec, err := s.recordGenerator.Generate()
+	rec, err := s.recordGenerator.generate()
 	if err != nil {
 		return sdk.Record{}, err
 	}

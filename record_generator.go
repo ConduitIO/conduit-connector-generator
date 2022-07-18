@@ -27,14 +27,14 @@ import (
 )
 
 type recordGenerator interface {
-	Generate() (sdk.Record, error)
+	generate() (sdk.Record, error)
 }
 
 type defaultRecordGen struct {
 	config RecordConfig
 }
 
-func (g defaultRecordGen) Generate() (sdk.Record, error) {
+func (g defaultRecordGen) generate() (sdk.Record, error) {
 	p, err := g.generatePayload(g.config)
 	if err != nil {
 		return sdk.Record{}, err
