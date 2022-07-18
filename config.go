@@ -15,6 +15,7 @@
 package generator
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -50,6 +51,9 @@ func ParseRecordConfig(formatType, formatOptions string) (RecordConfig, error) {
 	switch formatType {
 	case FormatFile:
 		c.FormatType = FormatFile
+		if formatOptions == "" {
+			return RecordConfig{}, errors.New("file path not specified")
+		}
 		c.FormatOptions["path"] = formatOptions
 	case FormatStructured, FormatRaw:
 		fields, err := parseFields(formatOptions)

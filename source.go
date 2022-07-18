@@ -28,7 +28,7 @@ type Source struct {
 
 	created         int64
 	config          Config
-	recordGenerator RecordGenerator
+	recordGenerator recordGenerator
 }
 
 func NewSource() sdk.Source {
@@ -44,8 +44,8 @@ func (s *Source) Configure(_ context.Context, config map[string]string) error {
 	return nil
 }
 
-func (s *Source) Open(ctx context.Context, position sdk.Position) error {
-	s.recordGenerator = NewRecordGenerator(s.config.RecordConfig)
+func (s *Source) Open(_ context.Context, _ sdk.Position) error {
+	s.recordGenerator = newRecordGenerator(s.config.RecordConfig)
 	return nil
 }
 
@@ -62,7 +62,7 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, err
 	}
 
-	rec, err := s.recordGenerator()
+	rec, err := s.recordGenerator.Generate()
 	if err != nil {
 		return sdk.Record{}, err
 	}
@@ -95,6 +95,6 @@ func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
 	return nil // no ack needed
 }
 
-func (s *Source) Teardown(ctx context.Context) error {
+func (s *Source) Teardown(_ context.Context) error {
 	return nil // nothing to stop
 }

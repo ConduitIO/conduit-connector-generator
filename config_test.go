@@ -39,13 +39,105 @@ func TestParseFull(t *testing.T) {
 	is.Equal(FormatRaw, underTest.RecordConfig.FormatType)
 }
 
-func TestParse_PayloadFile(t *testing.T) {
+func TestParseFields_RequiredNotPresent(t *testing.T) {
+	is := is.New(t)
+	_, err := Parse(map[string]string{
+		RecordCount: "100",
+		ReadTime:    "5s",
+	})
+	is.True(err != nil)
+	is.Equal("required parameters missing [format.type format.options]", err.Error())
+}
+
+func TestParse_DifferentFormats(t *testing.T) {
 	testCases := []struct {
 		name    string
 		input   map[string]string
 		wantErr string
 		wantCfg Config
-	}{}
+	}{
+		{
+			name: "raw format",
+			input: map[string]string{
+				FormatType:    FormatRaw,
+				FormatOptions: "id:int",
+			},
+			wantErr: "",
+			wantCfg: Config{
+				RecordCount: -1,
+				ReadTime:    0,
+				RecordConfig: RecordConfig{
+					FormatType: FormatRaw,
+					FormatOptions: map[string]interface{}{
+						"fields": map[string]string{"id": "int"},
+					},
+				},
+			},
+		},
+		{
+			name: "structured format",
+			input: map[string]string{
+				FormatType:    FormatStructured,
+				FormatOptions: "id:int",
+			},
+			wantErr: "",
+			wantCfg: Config{
+				RecordCount: -1,
+				ReadTime:    0,
+				RecordConfig: RecordConfig{
+					FormatType: FormatStructured,
+					FormatOptions: map[string]interface{}{
+						"fields": map[string]string{"id": "int"},
+					},
+				},
+			},
+		},
+		{
+			name: "file format",
+			input: map[string]string{
+				FormatType:    FormatFile,
+				FormatOptions: "/path/to/file.txt",
+			},
+			wantErr: "",
+			wantCfg: Config{
+				RecordCount: -1,
+				ReadTime:    0,
+				RecordConfig: RecordConfig{
+					FormatType: FormatFile,
+					FormatOptions: map[string]interface{}{
+						"path": "/path/to/file.txt",
+					},
+				},
+			},
+		},
+		{
+			name: "file format, no path",
+			input: map[string]string{
+				FormatType:    FormatFile,
+				FormatOptions: "",
+			},
+			wantErr: "failed configuring payload generator: file path not specified",
+			wantCfg: Config{},
+		},
+		{
+			name: "structured, malformed fields, no type",
+			input: map[string]string{
+				FormatType:    FormatStructured,
+				FormatOptions: "abc:",
+			},
+			wantErr: `failed configuring payload generator: failed parsing fields: invalid field spec "abc:"`,
+			wantCfg: Config{},
+		},
+		{
+			name: "structured, malformed fields, name only",
+			input: map[string]string{
+				FormatType:    FormatStructured,
+				FormatOptions: "abc",
+			},
+			wantErr: `failed configuring payload generator: failed parsing fields: invalid field spec "abc"`,
+			wantCfg: Config{},
+		},
+	}
 
 	for _, tc := range testCases {
 		tc := tc
@@ -61,40 +153,4 @@ func TestParse_PayloadFile(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestParseFields_RequiredNotPresent(t *testing.T) {
-	is := is.New(t)
-	_, err := Parse(map[string]string{
-		RecordCount: "100",
-		ReadTime:    "5s",
-	})
-	is.True(err != nil)
-	is.Equal("either fields or a payload need to be specified", err.Error())
-}
-
-func TestParseFields_OptionalNotPresent(t *testing.T) {
-	is := is.New(t)
-	_, err := Parse(map[string]string{})
-	is.NoErr(err)
-}
-
-func TestParseFields_MalformedFields_NoType(t *testing.T) {
-	is := is.New(t)
-	_, err := Parse(map[string]string{
-		FormatType:    FormatStructured,
-		FormatOptions: "abc:",
-	})
-	is.True(err != nil)
-	is.Equal(`failed parsing field spec: invalid field spec "abc:"`, err.Error())
-}
-
-func TestParseFields_MalformedFields_NameOnly(t *testing.T) {
-	is := is.New(t)
-	_, err := Parse(map[string]string{
-		FormatType:    FormatStructured,
-		FormatOptions: "abc",
-	})
-	is.True(err != nil)
-	is.Equal(`failed parsing field spec: invalid field spec "abc"`, err.Error())
 }
