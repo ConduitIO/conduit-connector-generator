@@ -50,12 +50,12 @@ func Specification() sdk.Specification {
 			},
 			FormatType: {
 				Default:     FormatRaw,
-				Required:    false,
+				Required:    true,
 				Description: "Format of the generated payload data: raw, structured, file.",
 			},
 			FormatOptions: {
 				Default:  "",
-				Required: false,
+				Required: true,
 				Description: "Options for the format type selected, which are:" +
 					"1. For raw and structured: a comma-separated list of name:type tokens, where type can be: int, string, time, bool." +
 					"2. For the file format: a path to the file.",
