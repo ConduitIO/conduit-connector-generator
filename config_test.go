@@ -42,7 +42,7 @@ func TestParseFull(t *testing.T) {
 	is.Equal(5*time.Second, underTest.ReadTime)
 	is.Equal(
 		map[string]string{"id": "int", "name": "string", "joined": "time", "admin": "bool"},
-		underTest.RecordConfig.FormatOptions["fields"],
+		underTest.RecordConfig.FormatOptions,
 	)
 	is.Equal(FormatRaw, underTest.RecordConfig.FormatType)
 }
@@ -72,13 +72,9 @@ func TestParse_DifferentFormats(t *testing.T) {
 			},
 			wantErr: "",
 			wantCfg: Config{
-				RecordCount: -1,
-				ReadTime:    0,
 				RecordConfig: RecordConfig{
-					FormatType: FormatRaw,
-					FormatOptions: map[string]interface{}{
-						"fields": map[string]string{"id": "int"},
-					},
+					FormatType:    FormatRaw,
+					FormatOptions: map[string]string{"id": "int"},
 				},
 			},
 		},
@@ -90,13 +86,9 @@ func TestParse_DifferentFormats(t *testing.T) {
 			},
 			wantErr: "",
 			wantCfg: Config{
-				RecordCount: -1,
-				ReadTime:    0,
 				RecordConfig: RecordConfig{
-					FormatType: FormatStructured,
-					FormatOptions: map[string]interface{}{
-						"fields": map[string]string{"id": "int"},
-					},
+					FormatType:    FormatStructured,
+					FormatOptions: map[string]string{"id": "int"},
 				},
 			},
 		},
@@ -108,13 +100,9 @@ func TestParse_DifferentFormats(t *testing.T) {
 			},
 			wantErr: "",
 			wantCfg: Config{
-				RecordCount: -1,
-				ReadTime:    0,
 				RecordConfig: RecordConfig{
-					FormatType: FormatFile,
-					FormatOptions: map[string]interface{}{
-						"path": "/path/to/file.txt",
-					},
+					FormatType:    FormatFile,
+					FormatOptions: "/path/to/file.txt",
 				},
 			},
 		},
@@ -157,7 +145,7 @@ func TestParse_DifferentFormats(t *testing.T) {
 				is.Equal(tc.wantErr, err.Error())
 			} else {
 				is.NoErr(err)
-				is.Equal(tc.wantCfg, cfg)
+				is.Equal(tc.wantCfg.RecordConfig, cfg.RecordConfig)
 			}
 		})
 	}
