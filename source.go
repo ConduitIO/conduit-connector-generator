@@ -30,8 +30,9 @@ import (
 type Source struct {
 	sdk.UnimplementedSource
 
-	created int64
-	Config  Config
+	created       int64
+	generateUntil time.Time
+	Config        Config
 }
 
 func NewSource() sdk.Source {
@@ -59,12 +60,20 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	}
 	s.created++
 
+	if s.shouldSleep() {
+		err := s.sleep(ctx, s.Config.SleepTime)
+		if err != nil {
+			return sdk.Record{}, err
+		}
+		s.generateUntil = time.Now().Add(s.Config.GenerateTime)
+	}
+
 	err := s.sleep(ctx, s.Config.ReadTime)
 	if err != nil {
 		return sdk.Record{}, err
 	}
 
-	data, err := s.toData(s.newRecord(s.created))
+	data, err := s.toData(s.newPayload(s.created))
 	if err != nil {
 		return sdk.Record{}, err
 	}
@@ -75,6 +84,13 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		Payload:   data,
 		CreatedAt: time.Now(),
 	}, nil
+}
+
+func (s *Source) shouldSleep() bool {
+	if s.Config.SleepTime == 0 {
+		return false
+	}
+	return time.Now().After(s.generateUntil)
 }
 
 func (s *Source) sleep(ctx context.Context, duration time.Duration) error {
@@ -107,7 +123,7 @@ func (s *Source) Teardown(ctx context.Context) error {
 	return nil // nothing to stop
 }
 
-func (s *Source) newRecord(i int64) map[string]interface{} {
+func (s *Source) newPayload(i int64) map[string]interface{} {
 	rec := make(map[string]interface{})
 	for name, typeString := range s.Config.Fields {
 		rec[name] = s.newDummyValue(typeString, i)

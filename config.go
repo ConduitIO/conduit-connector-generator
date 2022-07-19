@@ -17,16 +17,19 @@ package generator
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	RecordCount = "recordCount"
-	ReadTime    = "readTime"
-	Fields      = "fields"
-	Format      = "format"
+	RecordCount  = "recordCount"
+	ReadTime     = "readTime"
+	SleepTime    = "burst.sleepTime"
+	GenerateTime = "burst.generateTime"
+	Fields       = "fields"
+	Format       = "format"
 
 	FormatRaw        = "raw"
 	FormatStructured = "structured"
@@ -35,13 +38,16 @@ const (
 var knownFieldTypes = []string{"int", "string", "time", "bool"}
 
 type Config struct {
-	RecordCount int64
-	ReadTime    time.Duration
-	Fields      map[string]string
-	Format      string
+	RecordCount  int64
+	ReadTime     time.Duration
+	SleepTime    time.Duration
+	GenerateTime time.Duration
+	Fields       map[string]string
+	Format       string
 }
 
 func Parse(config map[string]string) (Config, error) {
+	dh := durationHelper{}
 	parsed := Config{}
 	// default value
 	parsed.RecordCount = -1
@@ -52,13 +58,25 @@ func Parse(config map[string]string) (Config, error) {
 		}
 		parsed.RecordCount = recCountParsed
 	}
-	if readTime, ok := config[ReadTime]; ok {
-		readTimeParsed, err := time.ParseDuration(readTime)
-		if err != nil || readTimeParsed < 0 {
-			return Config{}, fmt.Errorf("invalid processing time: %w", err)
-		}
-		parsed.ReadTime = readTimeParsed
+
+	readTime, err := dh.parseNonNegative(config[ReadTime], time.Duration(0))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid read time: %w", err)
 	}
+	parsed.ReadTime = readTime
+
+	sleepTime, err := dh.parseNonNegative(config[SleepTime], time.Duration(0))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid sleep time: %w", err)
+	}
+	parsed.SleepTime = sleepTime
+
+	genTime, err := dh.parsePositive(config[GenerateTime], time.Duration(math.MaxInt64))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid generate time: %w", err)
+	}
+	parsed.GenerateTime = genTime
+
 	parsed.Format = FormatRaw // default
 	switch config[Format] {
 	case FormatRaw, FormatStructured:

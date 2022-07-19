@@ -38,6 +38,16 @@ func Specification() sdk.Specification {
 				Required:    false,
 				Description: "The time it takes to 'read' a record.",
 			},
+			SleepTime: {
+				Default:     "0s",
+				Required:    false,
+				Description: "The time the generator 'sleeps' before it starts generating records. Must be non-negative.",
+			},
+			GenerateTime: {
+				Default:     "max. duration in Go",
+				Required:    false,
+				Description: "The amount of time the generator is generating records. Must be positive.",
+			},
 			Fields: {
 				Default:     "",
 				Required:    true,
