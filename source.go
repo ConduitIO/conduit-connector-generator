@@ -28,6 +28,7 @@ type Source struct {
 
 	created         int64
 	config          Config
+	generateUntil   time.Time
 	recordGenerator recordGenerator
 }
 
@@ -57,6 +58,14 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	}
 	s.created++
 
+	if s.shouldSleep() {
+		err := s.sleep(ctx, s.config.SleepTime)
+		if err != nil {
+			return sdk.Record{}, err
+		}
+		s.generateUntil = time.Now().Add(s.config.GenerateTime)
+	}
+
 	err := s.sleep(ctx, s.config.ReadTime)
 	if err != nil {
 		return sdk.Record{}, err
@@ -67,6 +76,13 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, err
 	}
 	return rec, nil
+}
+
+func (s *Source) shouldSleep() bool {
+	if s.config.SleepTime == 0 {
+		return false
+	}
+	return time.Now().After(s.generateUntil)
 }
 
 func (s *Source) sleep(ctx context.Context, duration time.Duration) error {

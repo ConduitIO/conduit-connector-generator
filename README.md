@@ -24,7 +24,12 @@ explained in more details in the [Configuration section](#Configuration) below.
 
 The connector is great for getting started with Conduit but also for certain types of performance tests.
 
+It's possible to simulate a 'read' time for records. It's also possible to simulate bursts through "sleep and generate"
+cycles, where the connector is sleeping for some time (not generating any records), then generating records for the 
+specified time, and then repeating the same cycle. The connector always start with the sleeping phase.
+
 ### Configuration
+
 #### recordCount
 Number of records to be generated. -1 for no limit.
 * Required: false
@@ -56,3 +61,17 @@ An options string for the type of format specified in `format.type`.
   * If `format.type: file`, `format.options` is a path to a file, which will be taken as a payload for the generated records.
 * Default: ""
 * Example: "id:int,name:string" (generates a struct with an ID field, type int, and a name field, type string)
+
+#### burst.sleepTime
+The time the generator 'sleeps' between bursts.
+* Required: false
+* Possible values: A duration string, must not be negative. Also see: https://pkg.go.dev/time#ParseDuration
+* Default: "0s"
+* Example: "30s" (the generator sleeps for 30 seconds, then started generating records)
+
+#### burst.generateTime
+The amount of time the generator is generating records. Has effect only if `burst.sleepTime` is set.
+* Required: false
+* Possible values: A duration string, must be positive. Also see: https://pkg.go.dev/time#ParseDuration
+* Default: max. duration in Go
+* Example: "60s" (the generator will be generating records for 60 seconds)

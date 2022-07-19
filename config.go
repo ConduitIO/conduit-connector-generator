@@ -17,6 +17,7 @@ package generator
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +26,8 @@ import (
 const (
 	RecordCount   = "recordCount"
 	ReadTime      = "readTime"
+	SleepTime     = "burst.sleepTime"
+	GenerateTime  = "burst.generateTime"
 	FormatType    = "format.type"
 	FormatOptions = "format.options"
 
@@ -70,9 +73,10 @@ func ParseRecordConfig(formatType, formatOptions string) (RecordConfig, error) {
 }
 
 type Config struct {
-	RecordCount int64
-	ReadTime    time.Duration
-
+	RecordCount  int64
+	ReadTime     time.Duration
+	SleepTime    time.Duration
+	GenerateTime time.Duration
 	RecordConfig RecordConfig
 }
 
@@ -81,6 +85,8 @@ func Parse(config map[string]string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+
+	dh := durationHelper{}
 	parsed := Config{}
 
 	// parse record count
@@ -94,14 +100,23 @@ func Parse(config map[string]string) (Config, error) {
 		parsed.RecordCount = recCountParsed
 	}
 
-	// parse read time
-	if readTime, ok := config[ReadTime]; ok {
-		readTimeParsed, err := time.ParseDuration(readTime)
-		if err != nil || readTimeParsed < 0 {
-			return Config{}, fmt.Errorf("invalid processing time: %w", err)
-		}
-		parsed.ReadTime = readTimeParsed
+	readTime, err := dh.parseNonNegative(config[ReadTime], time.Duration(0))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid read time: %w", err)
 	}
+	parsed.ReadTime = readTime
+
+	sleepTime, err := dh.parseNonNegative(config[SleepTime], time.Duration(0))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid sleep time: %w", err)
+	}
+	parsed.SleepTime = sleepTime
+
+	genTime, err := dh.parsePositive(config[GenerateTime], time.Duration(math.MaxInt64))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid generate time: %w", err)
+	}
+	parsed.GenerateTime = genTime
 
 	rc, err := ParseRecordConfig(config[FormatType], config[FormatOptions])
 	if err != nil {
