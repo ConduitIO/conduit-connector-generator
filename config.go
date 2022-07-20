@@ -43,7 +43,7 @@ var (
 
 type RecordConfig struct {
 	FormatType    string
-	FormatOptions interface{}
+	FormatOptions map[string]interface{}
 }
 
 func ParseRecordConfig(formatType, formatOptions string) (RecordConfig, error) {
@@ -57,14 +57,14 @@ func ParseRecordConfig(formatType, formatOptions string) (RecordConfig, error) {
 		if formatOptions == "" {
 			return RecordConfig{}, errors.New("file path not specified")
 		}
-		c.FormatOptions = formatOptions
+		c.FormatOptions["path"] = formatOptions
 	case FormatStructured, FormatRaw:
 		fields, err := parseFields(formatOptions)
 		if err != nil {
 			return RecordConfig{}, fmt.Errorf("failed parsing fields: %w", err)
 		}
 		c.FormatType = formatType
-		c.FormatOptions = fields
+		c.FormatOptions["fields"] = fields
 	default:
 		return RecordConfig{}, fmt.Errorf("unknown payload format %q", formatType)
 	}

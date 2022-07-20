@@ -51,9 +51,9 @@ func newRecordGenerator(config RecordConfig) recordGenerator {
 func (g recordGenerator) generatePayload(config RecordConfig) (sdk.Data, error) {
 	switch config.FormatType {
 	case FormatFile:
-		return g.generateFilePayload(config.FormatOptions.(string))
+		return g.generateFilePayload(config.FormatOptions["path"].(string))
 	case FormatRaw, FormatStructured:
-		return g.generateStruct(config.FormatType, config.FormatOptions.(map[string]string))
+		return g.generateStruct(config.FormatType, config.FormatOptions["fields"].(map[string]string))
 	default:
 		return nil, fmt.Errorf("unrecognized type of payload to generate: %q", config.FormatType)
 	}
