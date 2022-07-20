@@ -28,6 +28,7 @@ import (
 
 type recordGenerator struct {
 	config RecordConfig
+	cached sdk.RawData
 }
 
 func (g recordGenerator) generate() (sdk.Record, error) {
@@ -60,12 +61,15 @@ func (g recordGenerator) generatePayload(config RecordConfig) (sdk.Data, error) 
 }
 
 func (g recordGenerator) generateFilePayload(path string) (sdk.Data, error) {
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed reading file: %w", err)
+	if g.cached == nil {
+		bytes, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed reading file: %w", err)
+		}
+		g.cached = bytes
 	}
 
-	return sdk.RawData(bytes), nil
+	return g.cached, nil
 }
 
 func (g recordGenerator) generateStruct(format string, fields map[string]string) (sdk.Data, error) {
