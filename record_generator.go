@@ -36,7 +36,7 @@ func newRecordGenerator(config RecordConfig) recordGenerator {
 }
 
 func (g *recordGenerator) warmUp() error {
-	if g.config.FormatType == FormatFile {
+	if g.config.FormatType != FormatFile {
 		return nil
 	}
 	bytes, err := os.ReadFile(g.config.FormatOptions.(string))
