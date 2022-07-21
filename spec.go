@@ -49,7 +49,7 @@ func Specification() sdk.Specification {
 				Description: "The amount of time the generator is generating records. Must be positive.",
 			},
 			FormatType: {
-				Default:     FormatRaw,
+				Default:     "",
 				Required:    true,
 				Description: "Format of the generated payload data: raw, structured, file.",
 			},

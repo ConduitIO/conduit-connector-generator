@@ -29,7 +29,7 @@ type Source struct {
 	created         int64
 	config          Config
 	generateUntil   time.Time
-	recordGenerator recordGenerator
+	recordGenerator *recordGenerator
 }
 
 func NewSource() sdk.Source {
@@ -47,7 +47,7 @@ func (s *Source) Configure(_ context.Context, config map[string]string) error {
 
 func (s *Source) Open(_ context.Context, _ sdk.Position) error {
 	s.recordGenerator = newRecordGenerator(s.config.RecordConfig)
-	return s.recordGenerator.warmUp()
+	return s.recordGenerator.init()
 }
 
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {

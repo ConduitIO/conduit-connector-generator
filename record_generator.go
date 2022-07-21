@@ -31,11 +31,11 @@ type recordGenerator struct {
 	cached sdk.RawData
 }
 
-func newRecordGenerator(config RecordConfig) recordGenerator {
-	return recordGenerator{config: config}
+func newRecordGenerator(config RecordConfig) *recordGenerator {
+	return &recordGenerator{config: config}
 }
 
-func (g *recordGenerator) warmUp() error {
+func (g *recordGenerator) init() error {
 	if g.config.FormatType != FormatFile {
 		return nil
 	}
