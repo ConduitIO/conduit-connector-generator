@@ -31,7 +31,23 @@ type recordGenerator struct {
 	cached sdk.RawData
 }
 
-func (g recordGenerator) generate() (sdk.Record, error) {
+func newRecordGenerator(config RecordConfig) recordGenerator {
+	return recordGenerator{config: config}
+}
+
+func (g *recordGenerator) warmUp() error {
+	if g.config.FormatType != FormatFile {
+		return nil
+	}
+	bytes, err := os.ReadFile(g.config.FormatOptions.(string))
+	if err != nil {
+		return fmt.Errorf("failed reading file: %w", err)
+	}
+	g.cached = bytes
+	return nil
+}
+
+func (g *recordGenerator) generate() (sdk.Record, error) {
 	p, err := g.generatePayload(g.config)
 	if err != nil {
 		return sdk.Record{}, err
@@ -45,14 +61,10 @@ func (g recordGenerator) generate() (sdk.Record, error) {
 	}, nil
 }
 
-func newRecordGenerator(config RecordConfig) recordGenerator {
-	return recordGenerator{config: config}
-}
-
-func (g recordGenerator) generatePayload(config RecordConfig) (sdk.Data, error) {
+func (g *recordGenerator) generatePayload(config RecordConfig) (sdk.Data, error) {
 	switch config.FormatType {
 	case FormatFile:
-		return g.generateFilePayload(config.FormatOptions.(string))
+		return g.generateFilePayload()
 	case FormatRaw, FormatStructured:
 		return g.generateStruct(config.FormatType, config.FormatOptions.(map[string]string))
 	default:
@@ -60,23 +72,15 @@ func (g recordGenerator) generatePayload(config RecordConfig) (sdk.Data, error) 
 	}
 }
 
-func (g recordGenerator) generateFilePayload(path string) (sdk.Data, error) {
-	if g.cached == nil {
-		bytes, err := os.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("failed reading file: %w", err)
-		}
-		g.cached = bytes
-	}
-
+func (g *recordGenerator) generateFilePayload() (sdk.Data, error) {
 	return g.cached, nil
 }
 
-func (g recordGenerator) generateStruct(format string, fields map[string]string) (sdk.Data, error) {
+func (g *recordGenerator) generateStruct(format string, fields map[string]string) (sdk.Data, error) {
 	return g.toData(format, g.newRecord(fields))
 }
 
-func (g recordGenerator) newRecord(fields map[string]string) map[string]interface{} {
+func (g *recordGenerator) newRecord(fields map[string]string) map[string]interface{} {
 	rec := make(map[string]interface{})
 	for name, typeString := range fields {
 		rec[name] = g.newDummyValue(typeString)
@@ -84,7 +88,7 @@ func (g recordGenerator) newRecord(fields map[string]string) map[string]interfac
 	return rec
 }
 
-func (g recordGenerator) newDummyValue(typeString string) interface{} {
+func (g *recordGenerator) newDummyValue(typeString string) interface{} {
 	switch typeString {
 	case "int":
 		return rand.Int31() //nolint:gosec // security not important here
@@ -99,7 +103,7 @@ func (g recordGenerator) newDummyValue(typeString string) interface{} {
 	}
 }
 
-func (g recordGenerator) toData(format string, rec map[string]interface{}) (sdk.Data, error) {
+func (g *recordGenerator) toData(format string, rec map[string]interface{}) (sdk.Data, error) {
 	switch format {
 	case FormatRaw:
 		return g.toRawData(rec)
@@ -110,7 +114,7 @@ func (g recordGenerator) toData(format string, rec map[string]interface{}) (sdk.
 	}
 }
 
-func (g recordGenerator) toRawData(rec map[string]interface{}) (sdk.RawData, error) {
+func (g *recordGenerator) toRawData(rec map[string]interface{}) (sdk.RawData, error) {
 	bytes, err := json.Marshal(rec)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't serialize data: %w", err)

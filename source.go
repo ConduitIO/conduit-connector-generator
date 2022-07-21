@@ -47,7 +47,7 @@ func (s *Source) Configure(_ context.Context, config map[string]string) error {
 
 func (s *Source) Open(_ context.Context, _ sdk.Position) error {
 	s.recordGenerator = newRecordGenerator(s.config.RecordConfig)
-	return nil
+	return s.recordGenerator.warmUp()
 }
 
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {

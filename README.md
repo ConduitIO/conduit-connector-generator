@@ -59,6 +59,7 @@ An options string for the type of format specified in `format.type`.
     where type can be: int, string, time, bool. `format.type` will define how the payload will be serialized (it will be either
     raw or structured).
   * If `format.type: file`, `format.options` is a path to a file, which will be taken as a payload for the generated records.
+The file will be cached.
 * Default: ""
 * Example: "id:int,name:string" (generates a struct with an ID field, type int, and a name field, type string)
 
