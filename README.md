@@ -5,6 +5,10 @@
 The generator connector is one of [Conduit](https://github.com/ConduitIO/conduit) builtin plugins. It generates sample
 records using its source connector. It has no destination and trying to use that will result in an error.
 
+Note that the generator currently has no concept of resuming work. For example, if you have configured it to generate 
+100 records, let it run for some time, and then restart it (by restarting the pipeline or Conduit), then it will start 
+generating the 100 records from scratch.
+
 ### How to build it
 
 Run `make`.
@@ -26,11 +30,49 @@ specified time, and then repeating the same cycle. The connector always start wi
 
 ### Configuration
 
-| name               | description                                                                                                          | required | Default             |
-|--------------------|----------------------------------------------------------------------------------------------------------------------|----------|---------------------|
-| recordCount        | Number of records to be generated. -1 for no limit.                                                                  | false    | "-1"                |
-| readTime           | The time it takes to 'read' a record.                                                                                | false    | "0s"                |
-| burst.sleepTime    | The time the generator 'sleeps' between bursts. Must be non-negative.                                                | false    | "0s"                |
-| burst.generateTime | The amount of time the generator is generating records. Must be positive.<br/>Has effect only if `burst.sleepTime` is set. | false    | max. duration in Go |
-| fields             | A comma-separated list of name:type tokens, where type can be: int, string, time, bool.                              | true     | ""                  |
-| format             | Format of the generated payload data: raw, structured.                                                               | false    | "raw"               |
+#### recordCount
+Number of records to be generated. -1 for no limit.
+* Required: false
+* Possible values: -1 or a non-negative number.
+* Default: "-1"
+* Example: "15" (generates 15 records)
+
+#### readTime
+The time it takes to 'read' a record.
+* Required: false
+* Possible values: A duration string, must not be negative. Also see: https://pkg.go.dev/time#ParseDuration
+* Default: "0s"
+* Example: "100ms" (generates records every 100ms)
+
+#### format.type
+Format of the generated payload data.
+* Required: true
+* Possible values: `raw`, `structured`, `file`
+* Default: ""
+* Example: "raw" (generates a record, with raw data payload)
+
+#### format.options
+An options string for the type of format specified in `format.type`.
+* Required: true
+* Possible values:
+  * If `format.type: raw` or `format.type: structured`, `format.options` is a comma-separated list of name:type tokens,
+    where type can be: int, string, time, bool. `format.type` will define how the payload will be serialized (it will be either
+    raw or structured).
+  * If `format.type: file`, `format.options` is a path to a file, which will be taken as a payload for the generated records.
+The file will be cached.
+* Default: ""
+* Example: "id:int,name:string" (generates a struct with an ID field, type int, and a name field, type string)
+
+#### burst.sleepTime
+The time the generator 'sleeps' between bursts.
+* Required: false
+* Possible values: A duration string, must not be negative. Also see: https://pkg.go.dev/time#ParseDuration
+* Default: "0s"
+* Example: "30s" (the generator sleeps for 30 seconds, then started generating records)
+
+#### burst.generateTime
+The amount of time the generator is generating records. Has effect only if `burst.sleepTime` is set.
+* Required: false
+* Possible values: A duration string, must be positive. Also see: https://pkg.go.dev/time#ParseDuration
+* Default: max. duration in Go
+* Example: "60s" (the generator will be generating records for 60 seconds)

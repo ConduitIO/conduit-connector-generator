@@ -48,15 +48,17 @@ func Specification() sdk.Specification {
 				Required:    false,
 				Description: "The amount of time the generator is generating records. Must be positive.",
 			},
-			Fields: {
+			FormatType: {
 				Default:     "",
 				Required:    true,
-				Description: "A comma-separated list of name:type tokens, where type can be: int, string, time, bool.",
+				Description: "Format of the generated payload data: raw, structured, file.",
 			},
-			Format: {
-				Default:     FormatRaw,
-				Required:    false,
-				Description: "Format of the generated payload data: raw, structured.",
+			FormatOptions: {
+				Default:  "",
+				Required: true,
+				Description: "Options for the format type selected, which are:" +
+					"1. For raw and structured: a comma-separated list of name:type tokens, where type can be: int, string, time, bool." +
+					"2. For the file format: a path to the file.",
 			},
 		},
 	}

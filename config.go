@@ -24,31 +24,72 @@ import (
 )
 
 const (
-	RecordCount  = "recordCount"
-	ReadTime     = "readTime"
-	SleepTime    = "burst.sleepTime"
-	GenerateTime = "burst.generateTime"
-	Fields       = "fields"
-	Format       = "format"
+	RecordCount   = "recordCount"
+	ReadTime      = "readTime"
+	SleepTime     = "burst.sleepTime"
+	GenerateTime  = "burst.generateTime"
+	FormatType    = "format.type"
+	FormatOptions = "format.options"
 
 	FormatRaw        = "raw"
 	FormatStructured = "structured"
+	FormatFile       = "file"
 )
 
-var knownFieldTypes = []string{"int", "string", "time", "bool"}
+var (
+	knownFieldTypes = []string{"int", "string", "time", "bool"}
+	requiredFields  = []string{FormatType, FormatOptions}
+)
+
+type RecordConfig struct {
+	FormatType    string
+	FormatOptions interface{}
+}
+
+func ParseRecordConfig(formatType, formatOptions string) (RecordConfig, error) {
+	c := RecordConfig{
+		FormatOptions: make(map[string]interface{}),
+	}
+	// check if it's a recognized format
+	switch formatType {
+	case FormatFile:
+		c.FormatType = FormatFile
+		if formatOptions == "" {
+			return RecordConfig{}, errors.New("file path not specified")
+		}
+		c.FormatOptions = formatOptions
+	case FormatStructured, FormatRaw:
+		fields, err := parseFields(formatOptions)
+		if err != nil {
+			return RecordConfig{}, fmt.Errorf("failed parsing fields: %w", err)
+		}
+		c.FormatType = formatType
+		c.FormatOptions = fields
+	default:
+		return RecordConfig{}, fmt.Errorf("unknown payload format %q", formatType)
+	}
+
+	return c, nil
+}
 
 type Config struct {
 	RecordCount  int64
 	ReadTime     time.Duration
 	SleepTime    time.Duration
 	GenerateTime time.Duration
-	Fields       map[string]string
-	Format       string
+	RecordConfig RecordConfig
 }
 
 func Parse(config map[string]string) (Config, error) {
+	err := checkRequired(config)
+	if err != nil {
+		return Config{}, err
+	}
+
 	dh := durationHelper{}
 	parsed := Config{}
+
+	// parse record count
 	// default value
 	parsed.RecordCount = -1
 	if recCount, ok := config[RecordCount]; ok {
@@ -77,43 +118,55 @@ func Parse(config map[string]string) (Config, error) {
 	}
 	parsed.GenerateTime = genTime
 
-	parsed.Format = FormatRaw // default
-	switch config[Format] {
-	case FormatRaw, FormatStructured:
-		parsed.Format = config[Format]
-	case "":
-		// leave default
-	default:
-		return Config{}, fmt.Errorf("unknown payload format %q", config[Format])
+	rc, err := ParseRecordConfig(config[FormatType], config[FormatOptions])
+	if err != nil {
+		return Config{}, fmt.Errorf("failed configuring payload generator: %w", err)
 	}
-
-	fieldsConcat := config[Fields]
-	if fieldsConcat == "" {
-		return Config{}, errors.New("no fields specified")
-	}
-
-	fieldsMap := map[string]string{}
-	fields := strings.Split(fieldsConcat, ",")
-	for _, field := range fields {
-		if strings.Trim(field, " ") == "" {
-			return Config{}, fmt.Errorf("got empty field spec in %q", field)
-		}
-		fieldSpec := strings.Split(field, ":")
-		if validFieldSpec(fieldSpec) {
-			return Config{}, fmt.Errorf("invalid field spec %q", field)
-		}
-		if !knownType(fieldSpec[1]) {
-			return Config{}, fmt.Errorf("unknown data type in %q", field)
-		}
-		fieldsMap[fieldSpec[0]] = fieldSpec[1]
-	}
-	parsed.Fields = fieldsMap
+	parsed.RecordConfig = rc
 
 	return parsed, nil
 }
 
+func checkRequired(cfg map[string]string) error {
+	var missing []string
+	for _, reqKey := range requiredFields {
+		_, exists := cfg[reqKey]
+		if !exists {
+			missing = append(missing, reqKey)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("required parameters missing %v", missing)
+	}
+	return nil
+}
+
+func parseFields(fieldsConcat string) (map[string]string, error) {
+	if fieldsConcat == "" {
+		return nil, nil
+	}
+	fieldsMap := map[string]string{}
+	fields := strings.Split(fieldsConcat, ",")
+	for _, field := range fields {
+		if strings.Trim(field, " ") == "" {
+			return nil, fmt.Errorf("got empty field spec in %q", field)
+		}
+		fieldSpec := strings.Split(field, ":")
+		if validFieldSpec(fieldSpec) {
+			return nil, fmt.Errorf("invalid field spec %q", field)
+		}
+		if !knownType(fieldSpec[1]) {
+			return nil, fmt.Errorf("unknown data type in %q", field)
+		}
+		fieldsMap[fieldSpec[0]] = fieldSpec[1]
+	}
+	return fieldsMap, nil
+}
+
 func validFieldSpec(fieldSpec []string) bool {
-	return len(fieldSpec) != 2 || strings.Trim(fieldSpec[0], " ") == "" || strings.Trim(fieldSpec[1], " ") == ""
+	return len(fieldSpec) != 2 ||
+		strings.Trim(fieldSpec[0], " ") == "" ||
+		strings.Trim(fieldSpec[1], " ") == ""
 }
 
 func knownType(typeString string) bool {

@@ -16,44 +16,42 @@ package generator
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"math/rand"
 	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
-	"github.com/google/uuid"
 )
 
 // Source connector
 type Source struct {
 	sdk.UnimplementedSource
 
-	created       int64
-	generateUntil time.Time
-	Config        Config
+	created         int64
+	config          Config
+	generateUntil   time.Time
+	recordGenerator *recordGenerator
 }
 
 func NewSource() sdk.Source {
 	return &Source{}
 }
 
-func (s *Source) Configure(ctx context.Context, config map[string]string) error {
+func (s *Source) Configure(_ context.Context, config map[string]string) error {
 	parsedCfg, err := Parse(config)
 	if err != nil {
 		return fmt.Errorf("invalid config: %w", err)
 	}
-	s.Config = parsedCfg
+	s.config = parsedCfg
 	return nil
 }
 
-func (s *Source) Open(ctx context.Context, position sdk.Position) error {
-	return nil // nothing to start
+func (s *Source) Open(_ context.Context, _ sdk.Position) error {
+	s.recordGenerator = newRecordGenerator(s.config.RecordConfig)
+	return s.recordGenerator.init()
 }
 
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
-	if s.created >= s.Config.RecordCount && s.Config.RecordCount >= 0 {
+	if s.created >= s.config.RecordCount && s.config.RecordCount >= 0 {
 		// nothing more to produce, block until context is done
 		<-ctx.Done()
 		return sdk.Record{}, ctx.Err()
@@ -61,33 +59,27 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	s.created++
 
 	if s.shouldSleep() {
-		err := s.sleep(ctx, s.Config.SleepTime)
+		err := s.sleep(ctx, s.config.SleepTime)
 		if err != nil {
 			return sdk.Record{}, err
 		}
-		s.generateUntil = time.Now().Add(s.Config.GenerateTime)
+		s.generateUntil = time.Now().Add(s.config.GenerateTime)
 	}
 
-	err := s.sleep(ctx, s.Config.ReadTime)
+	err := s.sleep(ctx, s.config.ReadTime)
 	if err != nil {
 		return sdk.Record{}, err
 	}
 
-	data, err := s.toData(s.newPayload(s.created))
+	rec, err := s.recordGenerator.generate()
 	if err != nil {
 		return sdk.Record{}, err
 	}
-	return sdk.Record{
-		Position:  []byte(uuid.New().String()),
-		Metadata:  nil,
-		Key:       sdk.RawData(fmt.Sprintf("key #%d", s.created)),
-		Payload:   data,
-		CreatedAt: time.Now(),
-	}, nil
+	return rec, nil
 }
 
 func (s *Source) shouldSleep() bool {
-	if s.Config.SleepTime == 0 {
+	if s.config.SleepTime == 0 {
 		return false
 	}
 	return time.Now().After(s.generateUntil)
@@ -119,48 +111,6 @@ func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
 	return nil // no ack needed
 }
 
-func (s *Source) Teardown(ctx context.Context) error {
+func (s *Source) Teardown(_ context.Context) error {
 	return nil // nothing to stop
-}
-
-func (s *Source) newPayload(i int64) map[string]interface{} {
-	rec := make(map[string]interface{})
-	for name, typeString := range s.Config.Fields {
-		rec[name] = s.newDummyValue(typeString, i)
-	}
-	return rec
-}
-
-func (s *Source) newDummyValue(typeString string, i int64) interface{} {
-	switch typeString {
-	case "int":
-		return rand.Int31() //nolint:gosec // security not important here
-	case "string":
-		return fmt.Sprintf("string %v", i)
-	case "time":
-		return time.Now()
-	case "bool":
-		return rand.Int()%2 == 0 //nolint:gosec // security not important here
-	default:
-		panic(errors.New("invalid field"))
-	}
-}
-
-func (s *Source) toData(rec map[string]interface{}) (sdk.Data, error) {
-	switch s.Config.Format {
-	case FormatRaw:
-		return s.toRawData(rec)
-	case FormatStructured:
-		return sdk.StructuredData(rec), nil
-	default:
-		return nil, fmt.Errorf("unknown format request %q", s.Config.Format)
-	}
-}
-
-func (s *Source) toRawData(rec map[string]interface{}) (sdk.RawData, error) {
-	bytes, err := json.Marshal(rec)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't serialize data: %w", err)
-	}
-	return bytes, nil
 }

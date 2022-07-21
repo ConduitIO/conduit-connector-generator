@@ -32,93 +32,106 @@ type fieldTest[T interface{}] struct {
 func TestParseFull(t *testing.T) {
 	is := is.New(t)
 	underTest, err := Parse(map[string]string{
-		"recordCount": "-1",
-		"readTime":    "5s",
-		"fields":      "id:int,name:string,joined:time,admin:bool",
+		RecordCount:   "-1",
+		ReadTime:      "5s",
+		FormatType:    FormatRaw,
+		FormatOptions: "id:int,name:string,joined:time,admin:bool",
 	})
 	is.NoErr(err)
 	is.Equal(int64(-1), underTest.RecordCount)
 	is.Equal(5*time.Second, underTest.ReadTime)
-	is.Equal(map[string]string{"id": "int", "name": "string", "joined": "time", "admin": "bool"}, underTest.Fields)
+	is.Equal(
+		map[string]string{"id": "int", "name": "string", "joined": "time", "admin": "bool"},
+		underTest.RecordConfig.FormatOptions,
+	)
+	is.Equal(FormatRaw, underTest.RecordConfig.FormatType)
 }
 
 func TestParseFields_RequiredNotPresent(t *testing.T) {
 	is := is.New(t)
 	_, err := Parse(map[string]string{
-		"recordCount": "100",
-		"readTime":    "5s",
+		RecordCount: "100",
+		ReadTime:    "5s",
 	})
 	is.True(err != nil)
-	is.Equal("no fields specified", err.Error())
+	is.Equal("required parameters missing [format.type format.options]", err.Error())
 }
 
-func TestParseFields_OptionalNotPresent(t *testing.T) {
-	is := is.New(t)
-	_, err := Parse(map[string]string{
-		"fields": "a:int",
-	})
-	is.NoErr(err)
-}
-
-func TestParseFields_MalformedFields_NoType(t *testing.T) {
-	is := is.New(t)
-	_, err := Parse(map[string]string{
-		"fields": "abc:",
-	})
-	is.True(err != nil)
-	is.Equal(`invalid field spec "abc:"`, err.Error())
-}
-
-func TestParseFields_MalformedFields_NameOnly(t *testing.T) {
-	is := is.New(t)
-	_, err := Parse(map[string]string{
-		"fields": "abc",
-	})
-	is.True(err != nil)
-	is.Equal(`invalid field spec "abc"`, err.Error())
-}
-
-func TestParseFormat(t *testing.T) {
+func TestParse_DifferentFormats(t *testing.T) {
 	testCases := []struct {
-		name   string
-		input  map[string]string
-		expErr string
-		expVal string
+		name    string
+		input   map[string]string
+		wantErr string
+		wantCfg Config
 	}{
 		{
-			name: "parse 'raw'",
+			name: "raw format",
 			input: map[string]string{
-				"fields": "id:int",
-				"format": FormatRaw,
+				FormatType:    FormatRaw,
+				FormatOptions: "id:int",
 			},
-			expErr: "",
-			expVal: FormatRaw,
+			wantErr: "",
+			wantCfg: Config{
+				RecordConfig: RecordConfig{
+					FormatType:    FormatRaw,
+					FormatOptions: map[string]string{"id": "int"},
+				},
+			},
 		},
 		{
-			name: "parse 'structured'",
+			name: "structured format",
 			input: map[string]string{
-				"fields": "id:int",
-				"format": FormatStructured,
+				FormatType:    FormatStructured,
+				FormatOptions: "id:int",
 			},
-			expErr: "",
-			expVal: FormatStructured,
+			wantErr: "",
+			wantCfg: Config{
+				RecordConfig: RecordConfig{
+					FormatType:    FormatStructured,
+					FormatOptions: map[string]string{"id": "int"},
+				},
+			},
 		},
 		{
-			name: "default is 'raw' when no value present",
+			name: "file format",
 			input: map[string]string{
-				"fields": "id:int",
+				FormatType:    FormatFile,
+				FormatOptions: "/path/to/file.txt",
 			},
-			expErr: "",
-			expVal: FormatRaw,
+			wantErr: "",
+			wantCfg: Config{
+				RecordConfig: RecordConfig{
+					FormatType:    FormatFile,
+					FormatOptions: "/path/to/file.txt",
+				},
+			},
 		},
 		{
-			name: "default is 'raw' when empty string present",
+			name: "file format, no path",
 			input: map[string]string{
-				"fields": "id:int",
-				"format": "",
+				FormatType:    FormatFile,
+				FormatOptions: "",
 			},
-			expErr: "",
-			expVal: FormatRaw,
+			wantErr: "failed configuring payload generator: file path not specified",
+			wantCfg: Config{},
+		},
+		{
+			name: "structured, malformed fields, no type",
+			input: map[string]string{
+				FormatType:    FormatStructured,
+				FormatOptions: "abc:",
+			},
+			wantErr: `failed configuring payload generator: failed parsing fields: invalid field spec "abc:"`,
+			wantCfg: Config{},
+		},
+		{
+			name: "structured, malformed fields, name only",
+			input: map[string]string{
+				FormatType:    FormatStructured,
+				FormatOptions: "abc",
+			},
+			wantErr: `failed configuring payload generator: failed parsing fields: invalid field spec "abc"`,
+			wantCfg: Config{},
 		},
 	}
 
@@ -126,13 +139,13 @@ func TestParseFormat(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			is := is.New(t)
-			parsed, err := Parse(tc.input)
-			if tc.expErr != "" {
+			cfg, err := Parse(tc.input)
+			if tc.wantErr != "" {
 				is.True(err != nil)
-				is.Equal(tc.expErr, err.Error())
+				is.Equal(tc.wantErr, err.Error())
 			} else {
-				is.True(err == nil)
-				is.Equal(tc.expVal, parsed.Format)
+				is.NoErr(err)
+				is.Equal(tc.wantCfg.RecordConfig, cfg.RecordConfig)
 			}
 		})
 	}
@@ -143,7 +156,8 @@ func TestParse_Durations(t *testing.T) {
 		{
 			name: "default read time is 0s",
 			input: map[string]string{
-				Fields: "id:int",
+				FormatType:    FormatRaw,
+				FormatOptions: "id:int",
 			},
 			expErr: "",
 			expVal: time.Duration(0),
@@ -152,8 +166,9 @@ func TestParse_Durations(t *testing.T) {
 		{
 			name: "negative read time not allowed",
 			input: map[string]string{
-				Fields:   "id:int",
-				ReadTime: "-1s",
+				FormatType:    FormatRaw,
+				FormatOptions: "id:int",
+				ReadTime:      "-1s",
 			},
 			expErr: "invalid read time: duration cannot be negative",
 			expVal: time.Duration(0),
@@ -162,7 +177,8 @@ func TestParse_Durations(t *testing.T) {
 		{
 			name: "default sleep time is 0s",
 			input: map[string]string{
-				Fields: "id:int",
+				FormatType:    FormatRaw,
+				FormatOptions: "id:int",
 			},
 			expErr: "",
 			expVal: time.Duration(0),
@@ -171,8 +187,9 @@ func TestParse_Durations(t *testing.T) {
 		{
 			name: "negative sleep time not allowed",
 			input: map[string]string{
-				Fields:    "id:int",
-				SleepTime: "-1s",
+				FormatType:    FormatRaw,
+				FormatOptions: "id:int",
+				SleepTime:     "-1s",
 			},
 			expErr: "invalid sleep time: duration cannot be negative",
 			expVal: time.Duration(0),
@@ -181,8 +198,9 @@ func TestParse_Durations(t *testing.T) {
 		{
 			name: "negative generate time not allowed",
 			input: map[string]string{
-				Fields:       "id:int",
-				GenerateTime: "-1s",
+				FormatType:    FormatRaw,
+				FormatOptions: "id:int",
+				GenerateTime:  "-1s",
 			},
 			expErr: "invalid generate time: duration must be positive",
 			expVal: time.Duration(0),
@@ -191,8 +209,9 @@ func TestParse_Durations(t *testing.T) {
 		{
 			name: "generate time 0 not allowed",
 			input: map[string]string{
-				Fields:       "id:int",
-				GenerateTime: "0ms",
+				FormatType:    FormatRaw,
+				FormatOptions: "id:int",
+				GenerateTime:  "0ms",
 			},
 			expErr: "invalid generate time: duration must be positive",
 			expVal: time.Duration(0),

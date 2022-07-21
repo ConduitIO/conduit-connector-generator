@@ -17,6 +17,7 @@ package generator
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
@@ -26,18 +27,14 @@ import (
 
 func TestRead_RawData(t *testing.T) {
 	is := is.New(t)
-	cfg := map[string]string{
-		"recordCount": "1",
-		"fields":      "id:int,name:string,joined:time,admin:bool",
-		"format":      FormatRaw,
-	}
-	underTest := NewSource()
-	t.Cleanup(func() {
-		_ = underTest.Teardown(context.Background())
-	})
-
-	err := underTest.Configure(context.Background(), cfg)
-	is.NoErr(err)
+	underTest := openTestSource(
+		t,
+		map[string]string{
+			RecordCount:   "1",
+			FormatType:    FormatRaw,
+			FormatOptions: "id:int,name:string,joined:time,admin:bool",
+		},
+	)
 
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
@@ -55,20 +52,38 @@ func TestRead_RawData(t *testing.T) {
 	is.NoErr(err)
 }
 
+func TestRead_PayloadFile(t *testing.T) {
+	is := is.New(t)
+	underTest := openTestSource(
+		t,
+		map[string]string{
+			RecordCount:   "1",
+			FormatType:    FormatFile,
+			FormatOptions: "./source_test.go",
+		},
+	)
+
+	rec, err := underTest.Read(context.Background())
+	is.NoErr(err)
+
+	v, ok := rec.Payload.(sdk.RawData)
+	is.True(ok)
+
+	expected, err := os.ReadFile("./source_test.go")
+	is.NoErr(err)
+	is.Equal(expected, v.Bytes())
+}
+
 func TestRead_StructuredData(t *testing.T) {
 	is := is.New(t)
-	cfg := map[string]string{
-		"recordCount": "1",
-		"fields":      "id:int,name:string,joined:time,admin:bool",
-		"format":      FormatStructured,
-	}
-	underTest := NewSource()
-	t.Cleanup(func() {
-		_ = underTest.Teardown(context.Background())
-	})
-
-	err := underTest.Configure(context.Background(), cfg)
-	is.NoErr(err)
+	underTest := openTestSource(
+		t,
+		map[string]string{
+			RecordCount:   "1",
+			FormatType:    FormatStructured,
+			FormatOptions: "id:int,name:string,joined:time,admin:bool",
+		},
+	)
 
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
@@ -91,21 +106,17 @@ func TestRead_StructuredData(t *testing.T) {
 
 func TestSource_Read_SleepGenerate(t *testing.T) {
 	is := is.New(t)
-	cfg := map[string]string{
-		Fields:       "id:int",
-		Format:       FormatRaw,
-		ReadTime:     "10ms",
-		SleepTime:    "200ms",
-		GenerateTime: "50ms",
-	}
 
-	underTest := NewSource()
-	t.Cleanup(func() {
-		_ = underTest.Teardown(context.Background())
-	})
-
-	err := underTest.Configure(context.Background(), cfg)
-	is.NoErr(err)
+	underTest := openTestSource(
+		t,
+		map[string]string{
+			ReadTime:      "10ms",
+			SleepTime:     "200ms",
+			GenerateTime:  "50ms",
+			FormatType:    FormatRaw,
+			FormatOptions: "id:int",
+		},
+	)
 
 	type result struct {
 		err      error
@@ -135,6 +146,7 @@ func TestSource_Read_SleepGenerate(t *testing.T) {
 	results = make(chan result)
 	go func() {
 		start := time.Now()
+		var err error
 		for i := 1; i <= 4; i++ {
 			_, err = underTest.Read(context.Background())
 			is.NoErr(err)
@@ -169,4 +181,21 @@ func TestSource_Read_SleepGenerate(t *testing.T) {
 	case <-time.After(220 * time.Millisecond):
 		is.Fail() // timed out waiting for record
 	}
+}
+
+func openTestSource(t *testing.T, cfg map[string]string) sdk.Source {
+	is := is.New(t)
+
+	s := NewSource()
+	t.Cleanup(func() {
+		_ = s.Teardown(context.Background())
+	})
+
+	err := s.Configure(context.Background(), cfg)
+	is.NoErr(err)
+
+	err = s.Open(context.Background(), nil)
+	is.NoErr(err)
+
+	return s
 }
