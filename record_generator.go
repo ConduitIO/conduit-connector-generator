@@ -39,6 +39,11 @@ func (g *recordGenerator) warmUp() error {
 	if g.config.FormatType != FormatFile {
 		return nil
 	}
+	// files are cached, so that the time to read files
+	// (which grows as the file size grows)
+	// doesn't affect generator read times and the message rate
+	// any implications on Conduit's resource usage
+	// need to be taken into account while testing
 	bytes, err := os.ReadFile(g.config.FormatOptions.(string))
 	if err != nil {
 		return fmt.Errorf("failed reading file: %w", err)
