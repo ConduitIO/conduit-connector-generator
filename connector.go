@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package generator
 
-import (
-	generator "github.com/conduitio/conduit-connector-generator"
-	sdk "github.com/conduitio/conduit-connector-sdk"
-)
+import sdk "github.com/conduitio/conduit-connector-sdk"
 
-func main() {
-	sdk.Serve(generator.Connector)
+var Connector = sdk.Connector{
+	NewSpecification: Specification,
+	NewSource:        NewSource,
+	NewDestination:   nil,
 }
