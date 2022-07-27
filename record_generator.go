@@ -27,7 +27,6 @@ import (
 )
 
 type recordGenerator struct {
-	sdk.SourceUtil
 	config RecordConfig
 	cached sdk.RawData
 }
@@ -58,7 +57,7 @@ func (g *recordGenerator) generate() (sdk.Record, error) {
 	if err != nil {
 		return sdk.Record{}, err
 	}
-	return g.NewRecordCreate(
+	return sdk.Util.Source.NewRecordCreate(
 		[]byte(uuid.New().String()),
 		nil,
 		sdk.RawData(uuid.NewString()),
