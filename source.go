@@ -51,6 +51,11 @@ func (s *Source) Open(_ context.Context, _ sdk.Position) error {
 }
 
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
+	if ctx.Err() != nil {
+		// stop producing new records if context is canceled
+		return sdk.Record{}, ctx.Err()
+	}
+
 	if s.created >= s.config.RecordCount && s.config.RecordCount >= 0 {
 		// nothing more to produce, block until context is done
 		<-ctx.Done()
