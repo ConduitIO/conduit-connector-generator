@@ -57,13 +57,12 @@ func (g *recordGenerator) generate() (sdk.Record, error) {
 	if err != nil {
 		return sdk.Record{}, err
 	}
-	return sdk.Record{
-		Position:  []byte(uuid.New().String()),
-		Metadata:  make(map[string]string),
-		Key:       sdk.RawData(uuid.NewString()),
-		Payload:   p,
-		CreatedAt: time.Now(),
-	}, nil
+	return sdk.Util.Source.NewRecordCreate(
+		[]byte(uuid.New().String()),
+		nil,
+		sdk.RawData(uuid.NewString()),
+		p,
+	), nil
 }
 
 func (g *recordGenerator) generatePayload(config RecordConfig) (sdk.Data, error) {

@@ -39,7 +39,7 @@ func TestRead_RawData(t *testing.T) {
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
 
-	v, ok := rec.Payload.(sdk.RawData)
+	v, ok := rec.Payload.After.(sdk.RawData)
 	is.True(ok)
 
 	recStruct := struct {
@@ -66,7 +66,7 @@ func TestRead_PayloadFile(t *testing.T) {
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
 
-	v, ok := rec.Payload.(sdk.RawData)
+	v, ok := rec.Payload.After.(sdk.RawData)
 	is.True(ok)
 
 	expected, err := os.ReadFile("./source_test.go")
@@ -88,7 +88,7 @@ func TestRead_StructuredData(t *testing.T) {
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
 
-	v, ok := rec.Payload.(sdk.StructuredData)
+	v, ok := rec.Payload.After.(sdk.StructuredData)
 	is.True(ok)
 
 	recStruct := struct {
