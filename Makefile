@@ -1,5 +1,7 @@
 .PHONY: build test
 
+VERSION=`git describe --tags --dirty --always`
+
 build:
 	go build -ldflags "-X 'github.com/conduitio/conduit-connector-generator.version=${VERSION}'" -o conduit-connector-generator cmd/connector/main.go
 
