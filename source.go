@@ -39,36 +39,41 @@ func NewSource() sdk.Source {
 func (s *Source) Parameters() map[string]sdk.Parameter {
 	return map[string]sdk.Parameter{
 		RecordCount: {
+			Type:        sdk.ParameterTypeInt,
 			Default:     "-1",
-			Required:    false,
 			Description: "Number of records to be generated. -1 for no limit.",
 		},
 		ReadTime: {
+			Type:        sdk.ParameterTypeDuration,
 			Default:     "0s",
-			Required:    false,
 			Description: "The time it takes to 'read' a record.",
 		},
 		SleepTime: {
+			Type:        sdk.ParameterTypeDuration,
 			Default:     "0s",
-			Required:    false,
 			Description: "The time the generator 'sleeps' before it starts generating records. Must be non-negative.",
 		},
 		GenerateTime: {
-			Default:     "max. duration in Go",
-			Required:    false,
-			Description: "The amount of time the generator is generating records. Must be positive.",
+			Type:        sdk.ParameterTypeDuration,
+			Default:     "",
+			Description: "The amount of time the generator is generating records. Must be positive. If this option is empty, generator will generate records forever.",
 		},
 		FormatType: {
+			Type:        sdk.ParameterTypeString,
 			Default:     "",
-			Required:    true,
 			Description: "Format of the generated payload data: raw, structured, file.",
+			Validations: []sdk.Validation{
+				sdk.ValidationRequired{},
+				sdk.ValidationInclusion{List: []string{"raw", "structured", "file"}},
+			},
 		},
 		FormatOptions: {
-			Default:  "",
-			Required: true,
+			Type:    sdk.ParameterTypeString,
+			Default: "",
 			Description: "Options for the format type selected, which are:" +
 				"1. For raw and structured: a comma-separated list of name:type tokens, where type can be: int, string, time, bool." +
 				"2. For the file format: a path to the file.",
+			Validations: []sdk.Validation{sdk.ValidationRequired{}},
 		},
 	}
 }
