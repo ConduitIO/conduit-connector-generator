@@ -3,3 +3,6 @@
 
 # Binary built with `make build`
 /conduit-connector-generator
+
+# GoReleaser output
+dist/
