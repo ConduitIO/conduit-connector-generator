@@ -61,8 +61,7 @@ func (g *recordGenerator) generate() (sdk.Record, error) {
 	if err != nil {
 		return sdk.Record{}, fmt.Errorf("error generating record's operation")
 	}
-	var metadata sdk.Metadata
-	metadata = make(map[string]string)
+	var metadata sdk.Metadata = make(map[string]string)
 	metadata.SetReadAt(time.Now())
 	return sdk.Record{
 		Position:  []byte(uuid.New().String()),
@@ -97,7 +96,7 @@ func (g *recordGenerator) generateOperation() (sdk.Operation, error) {
 		return sdk.OperationDelete, nil
 	case "random":
 		// generate a random int from 1 to 4
-		randNum := rand.Int63n(4) + 1
+		randNum := rand.Int63n(4) + 1 //nolint:gosec // security not important here
 		return sdk.Operation(randNum), nil
 	default:
 		return sdk.OperationCreate, fmt.Errorf("unrecognized type of payload to generate: %q", g.config.FormatType)
