@@ -33,6 +33,7 @@ func TestRead_RawData(t *testing.T) {
 			RecordCount:   "1",
 			FormatType:    FormatRaw,
 			FormatOptions: "id:int,name:string,joined:time,admin:bool",
+			Operation:     "delete",
 		},
 	)
 
@@ -60,6 +61,7 @@ func TestRead_PayloadFile(t *testing.T) {
 			RecordCount:   "1",
 			FormatType:    FormatFile,
 			FormatOptions: "./source_test.go",
+			Operation:     "update",
 		},
 	)
 
@@ -82,6 +84,7 @@ func TestRead_StructuredData(t *testing.T) {
 			RecordCount:   "1",
 			FormatType:    FormatStructured,
 			FormatOptions: "id:int,name:string,joined:time,admin:bool",
+			Operation:     "snapshot",
 		},
 	)
 
@@ -115,6 +118,7 @@ func TestSource_Read_SleepGenerate(t *testing.T) {
 			GenerateTime:  "50ms",
 			FormatType:    FormatRaw,
 			FormatOptions: "id:int",
+			Operation:     "random",
 		},
 	)
 
