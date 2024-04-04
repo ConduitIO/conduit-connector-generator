@@ -99,7 +99,7 @@ func (g *recordGenerator) generateOperation() (sdk.Operation, error) {
 		randNum := rand.Int63n(4) + 1 //nolint:gosec // security not important here
 		return sdk.Operation(randNum), nil
 	default:
-		return sdk.OperationCreate, fmt.Errorf("unrecognized type of payload to generate: %q", g.config.FormatType)
+		return sdk.OperationCreate, fmt.Errorf("unrecognized operation to generate: %q", g.config.Operation)
 	}
 }
 
