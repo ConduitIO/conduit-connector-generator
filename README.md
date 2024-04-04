@@ -63,6 +63,13 @@ The file will be cached.
 * Default: ""
 * Example: "id:int,name:string" (generates a struct with an ID field, type int, and a name field, type string)
 
+#### operation
+The value generated for the record's `operation` field.
+* Required: false
+* Possible values: `create`, `update`, `snapshot`, `delete`, `random` 
+* Default: `create`
+* Example: `random` (generates a record with a random operation field, using one of the four operations `create`, `update`, `snaphot`, `delete`)
+
 #### burst.sleepTime
 The time the generator 'sleeps' between bursts.
 * Required: false

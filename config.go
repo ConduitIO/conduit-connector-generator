@@ -30,6 +30,7 @@ const (
 	GenerateTime  = "burst.generateTime"
 	FormatType    = "format.type"
 	FormatOptions = "format.options"
+	Operation     = "operation"
 
 	FormatRaw        = "raw"
 	FormatStructured = "structured"
@@ -44,11 +45,13 @@ var (
 type RecordConfig struct {
 	FormatType    string
 	FormatOptions interface{}
+	Operation     string
 }
 
-func ParseRecordConfig(formatType, formatOptions string) (RecordConfig, error) {
+func ParseRecordConfig(formatType, formatOptions, operation string) (RecordConfig, error) {
 	c := RecordConfig{
 		FormatOptions: make(map[string]interface{}),
+		Operation:     operation,
 	}
 	// check if it's a recognized format
 	switch formatType {
@@ -118,7 +121,7 @@ func Parse(config map[string]string) (Config, error) {
 	}
 	parsed.GenerateTime = genTime
 
-	rc, err := ParseRecordConfig(config[FormatType], config[FormatOptions])
+	rc, err := ParseRecordConfig(config[FormatType], config[FormatOptions], config[Operation])
 	if err != nil {
 		return Config{}, fmt.Errorf("failed configuring payload generator: %w", err)
 	}

@@ -57,12 +57,20 @@ func (g *recordGenerator) generate() (sdk.Record, error) {
 	if err != nil {
 		return sdk.Record{}, err
 	}
-	return sdk.Util.Source.NewRecordCreate(
-		[]byte(uuid.New().String()),
-		nil,
-		sdk.RawData(uuid.NewString()),
-		p,
-	), nil
+	operation, err := g.generateOperation()
+	if err != nil {
+		return sdk.Record{}, fmt.Errorf("error generating record's operation")
+	}
+	var metadata sdk.Metadata = make(map[string]string)
+	metadata.SetReadAt(time.Now())
+	return sdk.Record{
+		Position:  []byte(uuid.New().String()),
+		Operation: operation,
+		Metadata:  metadata,
+		Key:       sdk.RawData(uuid.NewString()),
+		Payload: sdk.Change{
+			After: p,
+		}}, nil
 }
 
 func (g *recordGenerator) generatePayload(config RecordConfig) (sdk.Data, error) {
@@ -73,6 +81,25 @@ func (g *recordGenerator) generatePayload(config RecordConfig) (sdk.Data, error)
 		return g.generateStruct(config.FormatType, config.FormatOptions.(map[string]string))
 	default:
 		return nil, fmt.Errorf("unrecognized type of payload to generate: %q", config.FormatType)
+	}
+}
+
+func (g *recordGenerator) generateOperation() (sdk.Operation, error) {
+	switch g.config.Operation {
+	case "create":
+		return sdk.OperationCreate, nil
+	case "update":
+		return sdk.OperationUpdate, nil
+	case "snapshot":
+		return sdk.OperationSnapshot, nil
+	case "delete":
+		return sdk.OperationDelete, nil
+	case "random":
+		// generate a random int from 1 to 4
+		randNum := rand.Int63n(4) + 1 //nolint:gosec // security not important here
+		return sdk.Operation(randNum), nil
+	default:
+		return sdk.OperationCreate, fmt.Errorf("unrecognized operation to generate: %q", g.config.Operation)
 	}
 }
 

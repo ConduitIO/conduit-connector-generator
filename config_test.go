@@ -36,6 +36,7 @@ func TestParseFull(t *testing.T) {
 		ReadTime:      "5s",
 		FormatType:    FormatRaw,
 		FormatOptions: "id:int,name:string,joined:time,admin:bool",
+		Operation:     "delete",
 	})
 	is.NoErr(err)
 	is.Equal(int64(-1), underTest.RecordCount)
@@ -45,6 +46,7 @@ func TestParseFull(t *testing.T) {
 		underTest.RecordConfig.FormatOptions,
 	)
 	is.Equal(FormatRaw, underTest.RecordConfig.FormatType)
+	is.Equal("delete", underTest.RecordConfig.Operation)
 }
 
 func TestParseFields_RequiredNotPresent(t *testing.T) {
@@ -69,12 +71,14 @@ func TestParse_DifferentFormats(t *testing.T) {
 			input: map[string]string{
 				FormatType:    FormatRaw,
 				FormatOptions: "id:int",
+				Operation:     "random",
 			},
 			wantErr: "",
 			wantCfg: Config{
 				RecordConfig: RecordConfig{
 					FormatType:    FormatRaw,
 					FormatOptions: map[string]string{"id": "int"},
+					Operation:     "random",
 				},
 			},
 		},
@@ -120,6 +124,7 @@ func TestParse_DifferentFormats(t *testing.T) {
 			input: map[string]string{
 				FormatType:    FormatStructured,
 				FormatOptions: "abc:",
+				Operation:     "create",
 			},
 			wantErr: `failed configuring payload generator: failed parsing fields: invalid field spec "abc:"`,
 			wantCfg: Config{},
@@ -129,6 +134,7 @@ func TestParse_DifferentFormats(t *testing.T) {
 			input: map[string]string{
 				FormatType:    FormatStructured,
 				FormatOptions: "abc",
+				Operation:     "create",
 			},
 			wantErr: `failed configuring payload generator: failed parsing fields: invalid field spec "abc"`,
 			wantCfg: Config{},
