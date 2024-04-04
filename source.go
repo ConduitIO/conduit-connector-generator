@@ -75,6 +75,14 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 				"2. For the file format: a path to the file.",
 			Validations: []sdk.Validation{sdk.ValidationRequired{}},
 		},
+		Operation: {
+			Type:        sdk.ParameterTypeString,
+			Default:     "create",
+			Description: "the generated record's operation type.",
+			Validations: []sdk.Validation{
+				sdk.ValidationInclusion{List: []string{"create", "update", "delete", "snapshot", "random"}},
+			},
+		},
 	}
 }
 
