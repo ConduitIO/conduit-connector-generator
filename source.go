@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/conduitio/conduit-connector-generator/internal"
+
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
@@ -26,10 +28,11 @@ import (
 type Source struct {
 	sdk.UnimplementedSource
 
-	created         int64
-	config          Config
-	generateUntil   time.Time
-	recordGenerator *recordGenerator
+	created       int
+	config        Config
+	generateUntil time.Time
+
+	recordGenerator internal.RecordGenerator
 }
 
 func NewSource() sdk.Source {
@@ -37,67 +40,37 @@ func NewSource() sdk.Source {
 }
 
 func (s *Source) Parameters() map[string]sdk.Parameter {
-	return map[string]sdk.Parameter{
-		RecordCount: {
-			Type:        sdk.ParameterTypeInt,
-			Default:     "-1",
-			Description: "Number of records to be generated. -1 for no limit.",
-		},
-		ReadTime: {
-			Type:        sdk.ParameterTypeDuration,
-			Default:     "0s",
-			Description: "The time it takes to 'read' a record.",
-		},
-		SleepTime: {
-			Type:        sdk.ParameterTypeDuration,
-			Default:     "0s",
-			Description: "The time the generator 'sleeps' before it starts generating records. Must be non-negative.",
-		},
-		GenerateTime: {
-			Type:        sdk.ParameterTypeDuration,
-			Default:     "",
-			Description: "The amount of time the generator is generating records. Must be positive. If this option is empty, generator will generate records forever.",
-		},
-		FormatType: {
-			Type:        sdk.ParameterTypeString,
-			Default:     "",
-			Description: "Format of the generated payload data: raw, structured, file.",
-			Validations: []sdk.Validation{
-				sdk.ValidationRequired{},
-				sdk.ValidationInclusion{List: []string{"raw", "structured", "file"}},
-			},
-		},
-		FormatOptions: {
-			Type:    sdk.ParameterTypeString,
-			Default: "",
-			Description: "Options for the format type selected, which are:" +
-				"1. For raw and structured: a comma-separated list of name:type tokens, where type can be: int, string, time, bool." +
-				"2. For the file format: a path to the file.",
-			Validations: []sdk.Validation{sdk.ValidationRequired{}},
-		},
-		Operation: {
-			Type:        sdk.ParameterTypeString,
-			Default:     "create",
-			Description: "the generated record's operation type.",
-			Validations: []sdk.Validation{
-				sdk.ValidationInclusion{List: []string{"create", "update", "delete", "snapshot", "random"}},
-			},
-		},
-	}
+	return s.config.Parameters()
 }
 
 func (s *Source) Configure(_ context.Context, config map[string]string) error {
-	parsedCfg, err := Parse(config)
+	err := sdk.Util.ParseConfig(config, &s.config)
 	if err != nil {
-		return fmt.Errorf("invalid config: %w", err)
+		return err
 	}
-	s.config = parsedCfg
-	return nil
+	return s.config.Validate()
 }
 
 func (s *Source) Open(_ context.Context, _ sdk.Position) error {
-	s.recordGenerator = newRecordGenerator(s.config.RecordConfig)
-	return s.recordGenerator.init()
+	var generators []internal.RecordGenerator
+	for collection, cfg := range s.config.GetConfigCollections() {
+		var gen internal.RecordGenerator
+		var err error
+		switch cfg.Format.Type {
+		case FormatTypeFile:
+			gen, err = internal.NewFileRecordGenerator(collection, cfg.SdkOperation(), cfg.Format.FileOptionsPath)
+		case FormatTypeRaw:
+			gen, err = internal.NewRawRecordGenerator(collection, cfg.SdkOperation(), cfg.Format.Options)
+		case FormatTypeStructured:
+			gen, err = internal.NewStructuredRecordGenerator(collection, cfg.SdkOperation(), cfg.Format.Options)
+		}
+		if err != nil {
+			return fmt.Errorf("failed to create record generator for collection %q: %w", collection, err)
+		}
+		generators = append(generators, gen)
+	}
+	s.recordGenerator = internal.Combine(generators...)
+	return nil
 }
 
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
@@ -113,12 +86,14 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	}
 	s.created++
 
+	// TODO use rate limiting instead of manual sleeps
+
 	if s.shouldSleep() {
-		err := s.sleep(ctx, s.config.SleepTime)
+		err := s.sleep(ctx, s.config.Burst.SleepTime)
 		if err != nil {
 			return sdk.Record{}, err
 		}
-		s.generateUntil = time.Now().Add(s.config.GenerateTime)
+		s.generateUntil = time.Now().Add(s.config.Burst.GenerateTime)
 	}
 
 	err := s.sleep(ctx, s.config.ReadTime)
@@ -126,15 +101,11 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, err
 	}
 
-	rec, err := s.recordGenerator.generate()
-	if err != nil {
-		return sdk.Record{}, err
-	}
-	return rec, nil
+	return s.recordGenerator.Next(), nil
 }
 
 func (s *Source) shouldSleep() bool {
-	if s.config.SleepTime == 0 {
+	if s.config.Burst.SleepTime == 0 {
 		return false
 	}
 	return time.Now().After(s.generateUntil)

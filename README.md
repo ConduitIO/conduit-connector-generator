@@ -30,6 +30,8 @@ specified time, and then repeating the same cycle. The connector always start wi
 
 ### Configuration
 
+// TODO update this section
+
 #### recordCount
 Number of records to be generated. -1 for no limit.
 * Required: false
