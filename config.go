@@ -23,6 +23,7 @@ import (
 	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -80,11 +81,10 @@ func (c Config) Validate() error {
 	// Validate readTime and rate.
 	if c.ReadTime > 0 && c.Rate > 0 {
 		errs = append(errs, errors.New(`cannot specify both "readTime" and "rate", "readTime" is deprecated, please only specify "rate"`))
-	} else if c.ReadTime > 0 {
-		// Convert readTime to rate.
-		c.Rate = 1 / c.ReadTime.Seconds()
 	}
-
+	if c.ReadTime < 0 {
+		errs = append(errs, errors.New(`"readTime" should be greater or equal to 0`))
+	}
 	if c.Rate < 0 {
 		errs = append(errs, errors.New(`"rate" should be greater or equal to 0`))
 	}
@@ -115,6 +115,14 @@ func (c Config) Validate() error {
 	}
 
 	return errors.Join(errs...)
+}
+
+func (c Config) RateLimit() rate.Limit {
+	if c.Rate == 0 && c.ReadTime > 0 {
+		// Convert read time to rate limit.
+		return rate.Limit(1 / c.ReadTime.Seconds())
+	}
+	return rate.Limit(c.Rate)
 }
 
 func (c Config) GetConfigCollections() map[string]ConfigCollection {

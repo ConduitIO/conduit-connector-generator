@@ -74,8 +74,8 @@ func (s *Source) Open(_ context.Context, _ sdk.Position) error {
 	}
 
 	s.recordGenerator = internal.Combine(generators...)
-	if s.config.Rate > 0 {
-		s.rateLimiter = rate.NewLimiter(rate.Limit(s.config.Rate), 1)
+	if rl := s.config.RateLimit(); rl > 0 {
+		s.rateLimiter = rate.NewLimiter(rl, 1)
 	}
 	if s.config.Burst.SleepTime > 0 {
 		s.burstUntil = time.Now().Add(s.config.Burst.GenerateTime)
