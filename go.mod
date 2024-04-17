@@ -3,7 +3,7 @@ module github.com/conduitio/conduit-connector-generator
 go 1.22
 
 require (
-	github.com/conduitio/conduit-connector-sdk v0.8.1-0.20240416144729-b2aac113f91c
+	github.com/conduitio/conduit-connector-sdk v0.8.1-0.20240417153027-b66fb84f0cc4
 	github.com/goccy/go-json v0.10.2
 	github.com/golangci/golangci-lint v1.57.2
 	github.com/matryer/is v1.4.1

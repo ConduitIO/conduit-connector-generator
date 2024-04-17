@@ -128,8 +128,8 @@ github.com/conduitio/conduit-commons v0.1.2-0.20240416084352-3f77773ddcfc h1:T3x
 github.com/conduitio/conduit-commons v0.1.2-0.20240416084352-3f77773ddcfc/go.mod h1:oi7VOF37xnqcOw1u70skO/cMSbENI72T/ymySxfMKbo=
 github.com/conduitio/conduit-connector-protocol v0.5.1-0.20240408121719-ffe7a46af296 h1:Qhl0Icbhh/32MuVfv+YReQMtH6qeKq+tMrxL2XC1U34=
 github.com/conduitio/conduit-connector-protocol v0.5.1-0.20240408121719-ffe7a46af296/go.mod h1:C1nWLpGCmK2bTjC5CGPAmjRhgBccx6/aS7XDDHKdZYA=
-github.com/conduitio/conduit-connector-sdk v0.8.1-0.20240416144729-b2aac113f91c h1:HUgI44hEz9u0PX+yuueCZ2qutDqRD3E3OQ3+H1Mch08=
-github.com/conduitio/conduit-connector-sdk v0.8.1-0.20240416144729-b2aac113f91c/go.mod h1:e20BBUL4QKV0Fg5dmUW4aMNgJqoQGThnanWLLc1F+hs=
+github.com/conduitio/conduit-connector-sdk v0.8.1-0.20240417153027-b66fb84f0cc4 h1:cCcEQJUlxGVzocqjcD1YBAs4X5Ekr/C9dJgfnc/oxgs=
+github.com/conduitio/conduit-connector-sdk v0.8.1-0.20240417153027-b66fb84f0cc4/go.mod h1:e20BBUL4QKV0Fg5dmUW4aMNgJqoQGThnanWLLc1F+hs=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/cpuguy83/go-md2man/v2 v2.0.3/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/curioswitch/go-reassign v0.2.0 h1:G9UZyOcpk/d7Gd6mqYgd8XYWFMw/znxwGDUstnC9DIo=
