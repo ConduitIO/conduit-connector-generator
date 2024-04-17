@@ -28,54 +28,60 @@ func TestConfig_Validate(t *testing.T) {
 	}{{
 		name: "raw format",
 		have: Config{
-			Format: ConfigFormat{
-				Type:    "raw",
-				Options: "id:int",
+			ConfigCollection: ConfigCollection{
+				Format: ConfigFormat{
+					Type: "raw",
+					Options: map[string]string{
+						"id": "int",
+					},
+				},
 			},
 		},
 	}, {
 		name: "structured format",
 		have: Config{
-			Format: ConfigFormat{
-				Type:    "structured",
-				Options: "id:int",
+			ConfigCollection: ConfigCollection{
+				Format: ConfigFormat{
+					Type: "structured",
+					Options: map[string]string{
+						"id": "int",
+					},
+				},
 			},
 		},
 	}, {
 		name: "file format",
 		have: Config{
-			Format: ConfigFormat{
-				Type:    "file",
-				Options: "/path/to/file.txt",
+			ConfigCollection: ConfigCollection{
+				Format: ConfigFormat{
+					Type:            "file",
+					FileOptionsPath: "/path/to/file.txt",
+				},
 			},
 		},
 	}, {
 		name: "file format, no path",
 		have: Config{
-			Format: ConfigFormat{
-				Type:    "file",
-				Options: "",
+			ConfigCollection: ConfigCollection{
+				Format: ConfigFormat{
+					Type: "file",
+				},
 			},
 		},
-		wantErr: "file path not specified",
+		wantErr: "failed validating default collection: failed validating format: file path not specified",
 	}, {
-		name: "structured, malformed fields, no type",
+		name: "structured, invalid type",
 		have: Config{
-			Format: ConfigFormat{
-				Type:    "structured",
-				Options: "abc:",
+			ConfigCollection: ConfigCollection{
+				Format: ConfigFormat{
+					Type: "structured",
+					Options: map[string]string{
+						"abc": "unknown",
+					},
+				},
 			},
 		},
-		wantErr: `failed parsing fields: invalid field spec "abc:"`,
-	}, {
-		name: "structured, malformed fields, name only",
-		have: Config{
-			Format: ConfigFormat{
-				Type:    "structured",
-				Options: "abc",
-			},
-		},
-		wantErr: `failed parsing fields: invalid field spec "abc"`,
+		wantErr: `failed validating default collection: failed validating format: failed parsing fields: unknown data type in "abc"`,
 	}}
 
 	for _, tc := range testCases {
@@ -91,88 +97,3 @@ func TestConfig_Validate(t *testing.T) {
 		})
 	}
 }
-
-// func TestParse_Durations(t *testing.T) {
-// 	testCases := []fieldTest[time.Duration]{
-// 		{
-// 			name: "default read time is 0s",
-// 			input: map[string]string{
-// 				FormatType:    FormatRaw,
-// 				FormatOptions: "id:int",
-// 			},
-// 			expErr: "",
-// 			expVal: time.Duration(0),
-// 			getter: func(cfg Config) time.Duration { return cfg.ReadTime },
-// 		},
-// 		{
-// 			name: "negative read time not allowed",
-// 			input: map[string]string{
-// 				FormatType:    FormatRaw,
-// 				FormatOptions: "id:int",
-// 				ReadTime:      "-1s",
-// 			},
-// 			expErr: "invalid read time: duration cannot be negative",
-// 			expVal: time.Duration(0),
-// 			getter: func(cfg Config) time.Duration { return cfg.ReadTime },
-// 		},
-// 		{
-// 			name: "default sleep time is 0s",
-// 			input: map[string]string{
-// 				FormatType:    FormatRaw,
-// 				FormatOptions: "id:int",
-// 			},
-// 			expErr: "",
-// 			expVal: time.Duration(0),
-// 			getter: func(cfg Config) time.Duration { return cfg.SleepTime },
-// 		},
-// 		{
-// 			name: "negative sleep time not allowed",
-// 			input: map[string]string{
-// 				FormatType:    FormatRaw,
-// 				FormatOptions: "id:int",
-// 				SleepTime:     "-1s",
-// 			},
-// 			expErr: "invalid sleep time: duration cannot be negative",
-// 			expVal: time.Duration(0),
-// 			getter: func(cfg Config) time.Duration { return cfg.SleepTime },
-// 		},
-// 		{
-// 			name: "negative generate time not allowed",
-// 			input: map[string]string{
-// 				FormatType:    FormatRaw,
-// 				FormatOptions: "id:int",
-// 				GenerateTime:  "-1s",
-// 			},
-// 			expErr: "invalid generate time: duration must be positive",
-// 			expVal: time.Duration(0),
-// 			getter: func(cfg Config) time.Duration { return cfg.GenerateTime },
-// 		},
-// 		{
-// 			name: "generate time 0 not allowed",
-// 			input: map[string]string{
-// 				FormatType:    FormatRaw,
-// 				FormatOptions: "id:int",
-// 				GenerateTime:  "0ms",
-// 			},
-// 			expErr: "invalid generate time: duration must be positive",
-// 			expVal: time.Duration(0),
-// 			getter: func(cfg Config) time.Duration { return cfg.GenerateTime },
-// 		},
-// 	}
-//
-// 	for _, tc := range testCases {
-// 		tc := tc
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			is := is.New(t)
-//
-// 			parsed, err := Parse(tc.input)
-// 			if tc.expErr != "" {
-// 				is.True(err != nil)              // expected error
-// 				is.Equal(tc.expErr, err.Error()) // expected different error
-// 			} else {
-// 				is.True(err == nil)                  // expected no error
-// 				is.Equal(tc.expVal, parsed.ReadTime) // expected different read time
-// 			}
-// 		})
-// 	}
-// }

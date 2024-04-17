@@ -33,7 +33,7 @@ type RecordGenerator interface {
 
 type baseRecordGenerator struct {
 	collection   string
-	operation    sdk.Operation
+	operations   []sdk.Operation
 	generateData func() sdk.Data
 
 	count int
@@ -50,12 +50,12 @@ func (g *baseRecordGenerator) Next() sdk.Record {
 
 	rec := sdk.Record{
 		Position:  sdk.Position(strconv.Itoa(g.count)),
-		Operation: g.operation,
+		Operation: g.operations[rand.Intn(len(g.operations))],
 		Metadata:  metadata,
 		Key:       sdk.RawData(randomWord()),
 	}
 
-	switch g.operation {
+	switch rec.Operation {
 	case sdk.OperationSnapshot, sdk.OperationCreate:
 		rec.Payload.After = g.generateData()
 	case sdk.OperationUpdate:
@@ -74,7 +74,7 @@ func (g *baseRecordGenerator) Next() sdk.Record {
 // payload data.
 func NewFileRecordGenerator(
 	collection string,
-	operation sdk.Operation,
+	operations []sdk.Operation,
 	path string,
 ) (RecordGenerator, error) {
 	// Files are cached, so that the time to read files doesn't affect generator
@@ -85,7 +85,7 @@ func NewFileRecordGenerator(
 	}
 	return &baseRecordGenerator{
 		collection: collection,
-		operation:  operation,
+		operations: operations,
 		generateData: func() sdk.Data {
 			return sdk.RawData(bytes)
 		},
@@ -97,12 +97,12 @@ func NewFileRecordGenerator(
 // for the structured data. The types can be one of: int, string, time, bool.
 func NewStructuredRecordGenerator(
 	collection string,
-	operation sdk.Operation,
+	operations []sdk.Operation,
 	fields map[string]string,
 ) (RecordGenerator, error) {
 	return &baseRecordGenerator{
 		collection: collection,
-		operation:  operation,
+		operations: operations,
 		generateData: func() sdk.Data {
 			return randomStructuredData(fields)
 		},
@@ -114,12 +114,12 @@ func NewStructuredRecordGenerator(
 // data. The types can be one of: int, string, time, bool.
 func NewRawRecordGenerator(
 	collection string,
-	operation sdk.Operation,
+	operations []sdk.Operation,
 	fields map[string]string,
 ) (RecordGenerator, error) {
 	return &baseRecordGenerator{
 		collection: collection,
-		operation:  operation,
+		operations: operations,
 		generateData: func() sdk.Data {
 			return randomRawData(fields)
 		},
@@ -131,13 +131,13 @@ func randomStructuredData(fields map[string]string) sdk.Data {
 	for field, typ := range fields {
 		switch typ {
 		case "int":
-			data[field] = rand.Int31() //nolint:gosec // security not important here
+			data[field] = rand.Int()
 		case "string":
 			data[field] = randomWord()
 		case "time":
 			data[field] = time.Now()
 		case "bool":
-			data[field] = rand.Int()%2 == 0 //nolint:gosec // security not important here
+			data[field] = rand.Int()%2 == 0
 		default:
 			panic(fmt.Errorf("field %q contains invalid type: %v", field, typ))
 		}

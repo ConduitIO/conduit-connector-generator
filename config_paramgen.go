@@ -11,13 +11,13 @@ func (Config) Parameters() map[string]sdk.Parameter {
 	return map[string]sdk.Parameter{
 		"burst.generateTime": {
 			Default:     "1s",
-			Description: "The amount of time the generator is generating records. Must be positive. If this option is empty, generator will generate records forever.",
+			Description: "The amount of time the generator is generating records in a burst. Has an effect only if `burst.sleepTime` is set.",
 			Type:        sdk.ParameterTypeDuration,
 			Validations: []sdk.Validation{},
 		},
 		"burst.sleepTime": {
-			Default:     "0s",
-			Description: "The time the generator 'sleeps' before it starts generating records. Must be non-negative.",
+			Default:     "",
+			Description: "The time the generator \"sleeps\" between bursts.",
 			Type:        sdk.ParameterTypeDuration,
 			Validations: []sdk.Validation{},
 		},
@@ -42,12 +42,11 @@ func (Config) Parameters() map[string]sdk.Parameter {
 			},
 		},
 		"collections.*.operation": {
-			Default:     "created",
-			Description: "The generated record operation.",
+			Default:     "create",
+			Description: "Comma separated list of record operations to generate. Allowed values are \"create\", \"update\", \"delete\", \"snapshot\".",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{
 				sdk.ValidationRequired{},
-				sdk.ValidationInclusion{List: []string{"created", "updated", "deleted"}},
 			},
 		},
 		"format.options.*": {
@@ -71,25 +70,32 @@ func (Config) Parameters() map[string]sdk.Parameter {
 			},
 		},
 		"operation": {
-			Default:     "created",
-			Description: "The generated record operation.",
+			Default:     "create",
+			Description: "Comma separated list of record operations to generate. Allowed values are \"create\", \"update\", \"delete\", \"snapshot\".",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{
 				sdk.ValidationRequired{},
-				sdk.ValidationInclusion{List: []string{"created", "updated", "deleted"}},
 			},
 		},
+		"rate": {
+			Default:     "",
+			Description: "The maximum rate in records per second, at which records are generated (0 means no rate limit).",
+			Type:        sdk.ParameterTypeFloat,
+			Validations: []sdk.Validation{},
+		},
 		"readTime": {
-			Default:     "0s",
-			Description: "The time it takes to 'read' a record.",
+			Default:     "",
+			Description: "The time it takes to 'read' a record. Deprecated: use `rate` instead.",
 			Type:        sdk.ParameterTypeDuration,
 			Validations: []sdk.Validation{},
 		},
 		"recordCount": {
-			Default:     "0",
-			Description: "Number of records to be generated. -1 for no limit.",
+			Default:     "",
+			Description: "Number of records to be generated (0 means infinite).",
 			Type:        sdk.ParameterTypeInt,
-			Validations: []sdk.Validation{},
+			Validations: []sdk.Validation{
+				sdk.ValidationGreaterThan{Value: -1},
+			},
 		},
 	}
 }

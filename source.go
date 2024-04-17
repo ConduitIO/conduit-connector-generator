@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/time/rate"
+
 	"github.com/conduitio/conduit-connector-generator/internal"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -28,11 +30,12 @@ import (
 type Source struct {
 	sdk.UnimplementedSource
 
-	created       int
-	config        Config
-	generateUntil time.Time
+	config      Config
+	recordCount int
+	burstUntil  time.Time
 
 	recordGenerator internal.RecordGenerator
+	rateLimiter     *rate.Limiter
 }
 
 func NewSource() sdk.Source {
@@ -58,18 +61,26 @@ func (s *Source) Open(_ context.Context, _ sdk.Position) error {
 		var err error
 		switch cfg.Format.Type {
 		case FormatTypeFile:
-			gen, err = internal.NewFileRecordGenerator(collection, cfg.SdkOperation(), cfg.Format.FileOptionsPath)
+			gen, err = internal.NewFileRecordGenerator(collection, cfg.SdkOperations(), cfg.Format.FileOptionsPath)
 		case FormatTypeRaw:
-			gen, err = internal.NewRawRecordGenerator(collection, cfg.SdkOperation(), cfg.Format.Options)
+			gen, err = internal.NewRawRecordGenerator(collection, cfg.SdkOperations(), cfg.Format.Options)
 		case FormatTypeStructured:
-			gen, err = internal.NewStructuredRecordGenerator(collection, cfg.SdkOperation(), cfg.Format.Options)
+			gen, err = internal.NewStructuredRecordGenerator(collection, cfg.SdkOperations(), cfg.Format.Options)
 		}
 		if err != nil {
 			return fmt.Errorf("failed to create record generator for collection %q: %w", collection, err)
 		}
 		generators = append(generators, gen)
 	}
+
 	s.recordGenerator = internal.Combine(generators...)
+	if s.config.Rate > 0 {
+		s.rateLimiter = rate.NewLimiter(rate.Limit(s.config.Rate), 1)
+	}
+	if s.config.Burst.SleepTime > 0 {
+		s.burstUntil = time.Now().Add(s.config.Burst.GenerateTime)
+	}
+
 	return nil
 }
 
@@ -79,55 +90,59 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, ctx.Err()
 	}
 
-	if s.created >= s.config.RecordCount && s.config.RecordCount >= 0 {
+	if s.config.RecordCount > 0 && s.recordCount >= s.config.RecordCount {
 		// nothing more to produce, block until context is done
 		<-ctx.Done()
 		return sdk.Record{}, ctx.Err()
 	}
-	s.created++
 
-	// TODO use rate limiting instead of manual sleeps
+	// prepare next record in advance to avoid losing time in case of rate limiting
+	rec := s.recordGenerator.Next()
 
-	if s.shouldSleep() {
-		err := s.sleep(ctx, s.config.Burst.SleepTime)
+	// bursts
+	if s.config.Burst.SleepTime > 0 {
+		err := s.sleepBetweenBursts(ctx)
 		if err != nil {
 			return sdk.Record{}, err
 		}
-		s.generateUntil = time.Now().Add(s.config.Burst.GenerateTime)
 	}
 
-	err := s.sleep(ctx, s.config.ReadTime)
-	if err != nil {
-		return sdk.Record{}, err
-	}
-
-	return s.recordGenerator.Next(), nil
-}
-
-func (s *Source) shouldSleep() bool {
-	if s.config.Burst.SleepTime == 0 {
-		return false
-	}
-	return time.Now().After(s.generateUntil)
-}
-
-func (s *Source) sleep(ctx context.Context, duration time.Duration) error {
-	if duration > 0 {
-		// If a sleep duration is requested the function will block for that
-		// period or until the context gets cancelled
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(duration):
-			return nil
+	// rate limiting
+	if s.rateLimiter != nil {
+		err := s.rateLimiter.Wait(ctx)
+		if err != nil {
+			return sdk.Record{}, err
 		}
 	}
 
-	// By default, we just check if the context is still valid.
+	s.recordCount++
+	return rec, nil
+}
+
+func (s *Source) sleepBetweenBursts(ctx context.Context) error {
+	now := time.Now()
+	if now.Before(s.burstUntil) {
+		return nil // no sleep needed
+	}
+
+	// Adjust the next burst time until it's in the future.
+	for s.burstUntil.Before(now) {
+		s.burstUntil = s.burstUntil.Add(s.config.Burst.SleepTime + s.config.Burst.GenerateTime)
+	}
+
+	// Check if we are in the sleep phase.
+	wakeAt := s.burstUntil.Add(-s.config.Burst.GenerateTime)
+	dur := wakeAt.Sub(now)
+	if dur < 0 {
+		// We are in the generating phase, no need to sleep.
+		return nil
+	}
+
+	// Block until the next burst window or context is done.
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	default:
+	case <-time.After(dur):
 		return nil
 	}
 }

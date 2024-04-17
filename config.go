@@ -33,10 +33,14 @@ const (
 
 type Config struct {
 	Burst ConfigBurst `json:"burst"`
-	// Number of records to be generated. -1 for no limit.
-	RecordCount int `json:"recordCount" default:"0"`
+	// Number of records to be generated (0 means infinite).
+	RecordCount int `json:"recordCount" validate:"gt=-1"`
 	// The time it takes to 'read' a record.
-	ReadTime time.Duration `json:"readTime" default:"0s"`
+	// Deprecated: use `rate` instead.
+	ReadTime time.Duration `json:"readTime"`
+	// The maximum rate in records per second, at which records are generated (0
+	// means no rate limit).
+	Rate float64 `json:"rate"`
 
 	// Configuration for default collection (i.e. records without a collection).
 	// Kept for backwards compatibility.
@@ -45,17 +49,17 @@ type Config struct {
 }
 
 type ConfigBurst struct {
-	// The time the generator 'sleeps' before it starts generating records. Must
-	// be non-negative.
-	SleepTime time.Duration `json:"sleepTime" default:"0s"`
-	// The amount of time the generator is generating records. Must be positive.
-	// If this option is empty, generator will generate records forever.
+	// The time the generator "sleeps" between bursts.
+	SleepTime time.Duration `json:"sleepTime"`
+	// The amount of time the generator is generating records in a burst. Has an
+	// effect only if `burst.sleepTime` is set.
 	GenerateTime time.Duration `json:"generateTime" default:"1s"`
 }
 
 type ConfigCollection struct {
-	// The generated record operation.
-	Operation string       `json:"operation" default:"created" validate:"required,inclusion=created|updated|deleted"`
+	// Comma separated list of record operations to generate. Allowed values are
+	// "create", "update", "delete", "snapshot".
+	Operation []string     `json:"operation" default:"create" validate:"required"`
 	Format    ConfigFormat `json:"format"`
 }
 
@@ -73,9 +77,30 @@ type ConfigFormat struct {
 func (c Config) Validate() error {
 	var errs []error
 
+	// Validate readTime and rate.
+	if c.ReadTime > 0 && c.Rate > 0 {
+		errs = append(errs, errors.New(`cannot specify both "readTime" and "rate", "readTime" is deprecated, please only specify "rate"`))
+	} else if c.ReadTime > 0 {
+		// Convert readTime to rate.
+		c.Rate = 1 / c.ReadTime.Seconds()
+	}
+
+	if c.Rate < 0 {
+		errs = append(errs, errors.New(`"rate" should be greater or equal to 0`))
+	}
+
+	// Validate burst.
+	if c.Burst.SleepTime < 0 {
+		errs = append(errs, errors.New(`"burst.sleepTime" should be greater or equal to 0`))
+	}
+	if c.Burst.SleepTime > 0 && c.Burst.GenerateTime <= 0 {
+		errs = append(errs, errors.New(`"burst.generateTime" should be greater than 0`))
+	}
+
+	// Validate collections.
 	collections := c.GetConfigCollections()
 	if len(collections) == 0 {
-		return errors.New("invalid configuration, please configure at least one collection using `format.type` or `collections.*.format.type`")
+		errs = append(errs, errors.New("invalid configuration, please configure at least one collection using `format.type` or `collections.*.format.type`"))
 	}
 	for collection, cfg := range collections {
 		err := cfg.Validate()
@@ -106,7 +131,7 @@ func (c Config) GetConfigCollections() map[string]ConfigCollection {
 func (c ConfigCollection) Validate() error {
 	var errs []error
 
-	_, err := c.parseOperation()
+	_, err := c.parseOperations()
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -118,19 +143,23 @@ func (c ConfigCollection) Validate() error {
 	return errors.Join(errs...)
 }
 
-func (c ConfigCollection) SdkOperation() sdk.Operation {
+func (c ConfigCollection) SdkOperations() []sdk.Operation {
 	// We can safely ignore the error here, it has been validated.
-	op, _ := c.parseOperation()
+	op, _ := c.parseOperations()
 	return op
 }
 
-func (c ConfigCollection) parseOperation() (sdk.Operation, error) {
-	var op sdk.Operation
-	err := op.UnmarshalText([]byte(c.Operation))
-	if err != nil {
-		return 0, fmt.Errorf("failed parsing operation: %w", err)
+func (c ConfigCollection) parseOperations() ([]sdk.Operation, error) {
+	operations := make([]sdk.Operation, len(c.Operation))
+	for i, raw := range c.Operation {
+		var op sdk.Operation
+		err := op.UnmarshalText([]byte(raw))
+		if err != nil {
+			return nil, fmt.Errorf("failed parsing operation: %w", err)
+		}
+		operations[i] = op
 	}
-	return op, nil
+	return operations, nil
 }
 
 func (c ConfigFormat) Validate() error {

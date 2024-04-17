@@ -11,6 +11,9 @@ linters-settings:
     min-complexity: 20
   goconst:
     ignore-tests: true
+  gosec:
+    excludes:
+      - G404 # Insecure random number source (rand) - we use math/rand as we don't care about security in this context
   goheader:
     template-path: '.golangci.goheader.template'
     values:

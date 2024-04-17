@@ -20,6 +20,9 @@ import (
 	"strings"
 )
 
+// words.txt contains a list of words, taken from /usr/share/dict/words on a
+// typical Unix system.
+//
 //go:embed words.txt
 var wordsRaw string
 var words []string
