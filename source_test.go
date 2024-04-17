@@ -43,6 +43,7 @@ func TestSource_Read_RawData(t *testing.T) {
 
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
+	now := time.Now()
 
 	v, ok := rec.Payload.Before.(sdk.RawData)
 	is.True(ok)
@@ -54,9 +55,13 @@ func TestSource_Read_RawData(t *testing.T) {
 	is.Equal(len(recMap), 4)
 	is.True(recMap["id"].(float64) > 0)
 	is.True(recMap["name"].(string) != "")
-	// is.True(recMap["joined"].) TODO joined
 	_, ok = recMap["admin"].(bool)
 	is.True(ok)
+
+	ts := recMap["joined"].(float64)
+	joined := time.Unix(0, int64(ts))
+	is.True(!joined.After(now))
+	is.True(joined.After(now.Add(-time.Millisecond * 10)))
 }
 
 func TestSource_Read_PayloadFile(t *testing.T) {
@@ -99,6 +104,7 @@ func TestSource_Read_StructuredData(t *testing.T) {
 
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
+	now := time.Now()
 
 	v, ok := rec.Payload.After.(sdk.StructuredData)
 	is.True(ok)
@@ -106,9 +112,12 @@ func TestSource_Read_StructuredData(t *testing.T) {
 	is.Equal(len(v), 4)
 	is.True(v["id"].(int) > 0)
 	is.True(v["name"].(string) != "")
-	// is.True(v["joined"].) TODO joined
 	_, ok = v["admin"].(bool)
 	is.True(ok)
+
+	joined := time.Unix(0, v["joined"].(int64))
+	is.True(!joined.After(now))
+	is.True(joined.After(now.Add(-time.Millisecond * 10)))
 }
 
 func TestSource_Read_RateLimit(t *testing.T) {

@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/conduitio/conduit-connector-generator/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"golang.org/x/time/rate"
 )
@@ -204,8 +205,7 @@ func (c ConfigFormat) validateFields(fields map[string]string) error {
 }
 
 func (c ConfigFormat) knownType(typeString string) bool {
-	knownFieldTypes := []string{"int", "string", "time", "bool"}
-	for _, t := range knownFieldTypes {
+	for _, t := range internal.KnownTypes {
 		if strings.ToLower(typeString) == t {
 			return true
 		}

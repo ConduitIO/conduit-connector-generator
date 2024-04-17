@@ -25,6 +25,8 @@ import (
 	"github.com/goccy/go-json"
 )
 
+var KnownTypes = []string{"int", "string", "time", "bool"}
+
 // RecordGenerator is an interface for generating records.
 type RecordGenerator interface {
 	// Next generates the next record.
@@ -135,7 +137,7 @@ func randomStructuredData(fields map[string]string) sdk.Data {
 		case "string":
 			data[field] = randomWord()
 		case "time":
-			data[field] = time.Now()
+			data[field] = time.Now().UnixNano()
 		case "bool":
 			data[field] = rand.Int()%2 == 0
 		default:
