@@ -16,12 +16,12 @@ package generator
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"testing"
 	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/goccy/go-json"
 	"github.com/matryer/is"
 )
 
@@ -46,14 +46,16 @@ func TestRead_RawData(t *testing.T) {
 	v, ok := rec.Payload.Before.(sdk.RawData)
 	is.True(ok)
 
-	recStruct := struct {
-		id     int32
-		name   string
-		joined time.Time
-		admin  bool
-	}{}
-	err = json.Unmarshal(v, &recStruct) //nolint:staticcheck // test struct
+	recMap := make(map[string]any)
+	err = json.Unmarshal(v, &recMap) //nolint:staticcheck // test struct
 	is.NoErr(err)
+
+	is.Equal(len(recMap), 4)
+	is.True(recMap["id"].(float64) > 0)
+	is.True(recMap["name"].(string) != "")
+	// is.True(recMap["joined"].) TODO joined
+	_, ok = recMap["admin"].(bool)
+	is.True(ok)
 }
 
 func TestRead_PayloadFile(t *testing.T) {
@@ -109,7 +111,6 @@ func TestRead_StructuredData(t *testing.T) {
 }
 
 func TestSource_Read_SleepGenerate(t *testing.T) {
-	t.Skip("needs to be rewritten")
 	is := is.New(t)
 
 	underTest := openTestSource(
