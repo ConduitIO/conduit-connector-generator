@@ -19,11 +19,9 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/time/rate"
-
 	"github.com/conduitio/conduit-connector-generator/internal"
-
 	sdk "github.com/conduitio/conduit-connector-sdk"
+	"golang.org/x/time/rate"
 )
 
 // Source connector
