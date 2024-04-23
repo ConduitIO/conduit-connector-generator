@@ -14,6 +14,11 @@ Run `make test` to run all the unit tests.
 
 ### Configuration
 
+> [!IMPORTANT]
+> Parameters starting with `collections.*` are used to configure the format and
+> operations for a specific collection. The `*` in the parameter name should be
+> replaced with the collection name.
+
 Below is a list of all available configuration parameters:
 
 <!-- readmegen:source.parameters.table -->
@@ -290,11 +295,6 @@ Number of records to be generated (0 means infinite).
   </tr>
 </table>
 <!-- /readmegen:source.parameters.table -->
-
-> [!IMPORTANT]
-> Parameters starting with `collections.*` are used to configure the format and
-> operations for a specific collection. The `*` in the parameter name should be
-> replaced with the collection name.
 
 ### Examples
 
