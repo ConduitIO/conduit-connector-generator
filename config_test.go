@@ -28,8 +28,8 @@ func TestConfig_Validate(t *testing.T) {
 	}{{
 		name: "raw format",
 		have: Config{
-			ConfigCollection: ConfigCollection{
-				Format: ConfigFormat{
+			CollectionConfig: CollectionConfig{
+				Format: FormatConfig{
 					Type: "raw",
 					Options: map[string]string{
 						"id": "int",
@@ -40,8 +40,8 @@ func TestConfig_Validate(t *testing.T) {
 	}, {
 		name: "structured format",
 		have: Config{
-			ConfigCollection: ConfigCollection{
-				Format: ConfigFormat{
+			CollectionConfig: CollectionConfig{
+				Format: FormatConfig{
 					Type: "structured",
 					Options: map[string]string{
 						"id": "int",
@@ -52,8 +52,8 @@ func TestConfig_Validate(t *testing.T) {
 	}, {
 		name: "file format",
 		have: Config{
-			ConfigCollection: ConfigCollection{
-				Format: ConfigFormat{
+			CollectionConfig: CollectionConfig{
+				Format: FormatConfig{
 					Type:            "file",
 					FileOptionsPath: "/path/to/file.txt",
 				},
@@ -62,8 +62,8 @@ func TestConfig_Validate(t *testing.T) {
 	}, {
 		name: "file format, no path",
 		have: Config{
-			ConfigCollection: ConfigCollection{
-				Format: ConfigFormat{
+			CollectionConfig: CollectionConfig{
+				Format: FormatConfig{
 					Type: "file",
 				},
 			},
@@ -72,8 +72,8 @@ func TestConfig_Validate(t *testing.T) {
 	}, {
 		name: "structured, invalid type",
 		have: Config{
-			ConfigCollection: ConfigCollection{
-				Format: ConfigFormat{
+			CollectionConfig: CollectionConfig{
+				Format: FormatConfig{
 					Type: "structured",
 					Options: map[string]string{
 						"abc": "unknown",

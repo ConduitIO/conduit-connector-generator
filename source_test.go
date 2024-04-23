@@ -37,7 +37,7 @@ func TestSource_Read_RawData(t *testing.T) {
 			"format.options.name":   "string",
 			"format.options.joined": "time",
 			"format.options.admin":  "bool",
-			"operation":             "delete",
+			"operations":            "delete",
 		},
 	)
 
@@ -72,7 +72,7 @@ func TestSource_Read_PayloadFile(t *testing.T) {
 			"recordCount":         "1",
 			"format.type":         "file",
 			"format.options.path": "./source_test.go",
-			"operation":           "update",
+			"operations":          "update",
 		},
 	)
 
@@ -98,7 +98,7 @@ func TestSource_Read_StructuredData(t *testing.T) {
 			"format.options.name":   "string",
 			"format.options.joined": "time",
 			"format.options.admin":  "bool",
-			"operation":             "snapshot",
+			"operations":            "snapshot",
 		},
 	)
 
@@ -126,7 +126,7 @@ func TestSource_Read_RateLimit(t *testing.T) {
 		"burst.generateTime": "150ms",
 		"format.type":        "raw",
 		"format.options.id":  "int",
-		"operation":          "create,update",
+		"operations":         "create,update",
 	}
 
 	// Test rate parameter

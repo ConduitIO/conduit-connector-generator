@@ -23,13 +23,13 @@ func (Config) Parameters() map[string]sdk.Parameter {
 		},
 		"collections.*.format.options.*": {
 			Default:     "",
-			Description: "The options for the format type selected, which are:   1. For raw and structured: pairs of field names and field types, where the type can be one of: int, string, time, bool.   2. For the file format: a path to the file.",
+			Description: "The options for the `raw` and `structured` format types. It accepts pairs of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`.",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{},
 		},
 		"collections.*.format.options.path": {
 			Default:     "",
-			Description: "Path to the input file (only applicable if the format type is file).",
+			Description: "Path to the input file (only applicable if the format type is `file`).",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{},
 		},
@@ -41,7 +41,7 @@ func (Config) Parameters() map[string]sdk.Parameter {
 				sdk.ValidationInclusion{List: []string{"raw", "structured", "file"}},
 			},
 		},
-		"collections.*.operation": {
+		"collections.*.operations": {
 			Default:     "create",
 			Description: "Comma separated list of record operations to generate. Allowed values are \"create\", \"update\", \"delete\", \"snapshot\".",
 			Type:        sdk.ParameterTypeString,
@@ -51,13 +51,13 @@ func (Config) Parameters() map[string]sdk.Parameter {
 		},
 		"format.options.*": {
 			Default:     "",
-			Description: "The options for the format type selected, which are:   1. For raw and structured: pairs of field names and field types, where the type can be one of: int, string, time, bool.   2. For the file format: a path to the file.",
+			Description: "The options for the `raw` and `structured` format types. It accepts pairs of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`.",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{},
 		},
 		"format.options.path": {
 			Default:     "",
-			Description: "Path to the input file (only applicable if the format type is file).",
+			Description: "Path to the input file (only applicable if the format type is `file`).",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{},
 		},
@@ -69,7 +69,7 @@ func (Config) Parameters() map[string]sdk.Parameter {
 				sdk.ValidationInclusion{List: []string{"raw", "structured", "file"}},
 			},
 		},
-		"operation": {
+		"operations": {
 			Default:     "create",
 			Description: "Comma separated list of record operations to generate. Allowed values are \"create\", \"update\", \"delete\", \"snapshot\".",
 			Type:        sdk.ParameterTypeString,

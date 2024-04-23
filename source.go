@@ -54,7 +54,7 @@ func (s *Source) Configure(_ context.Context, config map[string]string) error {
 
 func (s *Source) Open(_ context.Context, _ sdk.Position) error {
 	var generators []internal.RecordGenerator
-	for collection, cfg := range s.config.GetConfigCollections() {
+	for collection, cfg := range s.config.GetCollectionConfigs() {
 		var gen internal.RecordGenerator
 		var err error
 		switch cfg.Format.Type {

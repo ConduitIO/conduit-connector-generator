@@ -34,7 +34,7 @@ const (
 )
 
 type Config struct {
-	Burst ConfigBurst `json:"burst"`
+	Burst BurstConfig `json:"burst"`
 	// Number of records to be generated (0 means infinite).
 	RecordCount int `json:"recordCount" validate:"gt=-1"`
 	// The time it takes to 'read' a record.
@@ -46,11 +46,11 @@ type Config struct {
 
 	// Configuration for default collection (i.e. records without a collection).
 	// Kept for backwards compatibility.
-	ConfigCollection
-	Collections map[string]ConfigCollection `json:"collections"`
+	CollectionConfig
+	Collections map[string]CollectionConfig `json:"collections"`
 }
 
-type ConfigBurst struct {
+type BurstConfig struct {
 	// The time the generator "sleeps" between bursts.
 	SleepTime time.Duration `json:"sleepTime"`
 	// The amount of time the generator is generating records in a burst. Has an
@@ -58,21 +58,20 @@ type ConfigBurst struct {
 	GenerateTime time.Duration `json:"generateTime" default:"1s"`
 }
 
-type ConfigCollection struct {
+type CollectionConfig struct {
 	// Comma separated list of record operations to generate. Allowed values are
 	// "create", "update", "delete", "snapshot".
-	Operation []string     `json:"operation" default:"create" validate:"required"`
-	Format    ConfigFormat `json:"format"`
+	Operations []string     `json:"operations" default:"create" validate:"required"`
+	Format     FormatConfig `json:"format"`
 }
 
-type ConfigFormat struct {
+type FormatConfig struct {
 	// The format of the generated payload data (raw, structured, file).
 	Type string `json:"type" validate:"inclusion=raw|structured|file"`
-	// The options for the format type selected, which are:
-	//   1. For raw and structured: pairs of field names and field types, where the type can be one of: int, string, time, bool.
-	//   2. For the file format: a path to the file.
+	// The options for the `raw` and `structured` format types. It accepts pairs
+	// of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`.
 	Options map[string]string `json:"options"`
-	// Path to the input file (only applicable if the format type is file).
+	// Path to the input file (only applicable if the format type is `file`).
 	FileOptionsPath string `json:"options.path"`
 }
 
@@ -99,7 +98,7 @@ func (c Config) Validate() error {
 	}
 
 	// Validate collections.
-	collections := c.GetConfigCollections()
+	collections := c.GetCollectionConfigs()
 	if len(collections) == 0 {
 		errs = append(errs, errors.New("invalid configuration, please configure at least one collection using `format.type` or `collections.*.format.type`"))
 	}
@@ -121,15 +120,15 @@ func (c Config) Validate() error {
 func (c Config) RateLimit() rate.Limit {
 	if c.Rate == 0 && c.ReadTime > 0 {
 		// Convert read time to rate limit.
-		return rate.Limit(1 / c.ReadTime.Seconds())
+		return rate.Every(c.ReadTime)
 	}
 	return rate.Limit(c.Rate)
 }
 
-func (c Config) GetConfigCollections() map[string]ConfigCollection {
-	collections := make(map[string]ConfigCollection, len(c.Collections)+1)
+func (c Config) GetCollectionConfigs() map[string]CollectionConfig {
+	collections := make(map[string]CollectionConfig, len(c.Collections)+1)
 	if c.Format.Type != "" {
-		collections[""] = c.ConfigCollection
+		collections[""] = c.CollectionConfig
 	}
 	for k, v := range c.Collections {
 		collections[k] = v
@@ -137,7 +136,7 @@ func (c Config) GetConfigCollections() map[string]ConfigCollection {
 	return collections
 }
 
-func (c ConfigCollection) Validate() error {
+func (c CollectionConfig) Validate() error {
 	var errs []error
 
 	_, err := c.parseOperations()
@@ -152,15 +151,15 @@ func (c ConfigCollection) Validate() error {
 	return errors.Join(errs...)
 }
 
-func (c ConfigCollection) SdkOperations() []sdk.Operation {
+func (c CollectionConfig) SdkOperations() []sdk.Operation {
 	// We can safely ignore the error here, it has been validated.
 	op, _ := c.parseOperations()
 	return op
 }
 
-func (c ConfigCollection) parseOperations() ([]sdk.Operation, error) {
-	operations := make([]sdk.Operation, len(c.Operation))
-	for i, raw := range c.Operation {
+func (c CollectionConfig) parseOperations() ([]sdk.Operation, error) {
+	operations := make([]sdk.Operation, len(c.Operations))
+	for i, raw := range c.Operations {
 		var op sdk.Operation
 		err := op.UnmarshalText([]byte(raw))
 		if err != nil {
@@ -171,7 +170,7 @@ func (c ConfigCollection) parseOperations() ([]sdk.Operation, error) {
 	return operations, nil
 }
 
-func (c ConfigFormat) Validate() error {
+func (c FormatConfig) Validate() error {
 	switch c.Type {
 	case FormatTypeFile:
 		if c.FileOptionsPath == "" {
@@ -188,7 +187,7 @@ func (c ConfigFormat) Validate() error {
 	return nil
 }
 
-func (c ConfigFormat) validateFields(fields map[string]string) error {
+func (c FormatConfig) validateFields(fields map[string]string) error {
 	var errs []error
 	for f, t := range fields {
 		if strings.Trim(f, " ") == "" {
@@ -204,7 +203,7 @@ func (c ConfigFormat) validateFields(fields map[string]string) error {
 	return errors.Join(errs...)
 }
 
-func (c ConfigFormat) knownType(typeString string) bool {
+func (c FormatConfig) knownType(typeString string) bool {
 	for _, t := range internal.KnownTypes {
 		if strings.ToLower(typeString) == t {
 			return true
