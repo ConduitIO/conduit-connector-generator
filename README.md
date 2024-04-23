@@ -1,13 +1,8 @@
 # Conduit Connector Generator
 
-### General
-
-The generator connector is one of [Conduit](https://github.com/ConduitIO/conduit) builtin plugins. It generates sample
-records using its source connector. It has no destination and trying to use that will result in an error.
-
-Note that the generator currently has no concept of resuming work. For example, if you have configured it to generate 
-100 records, let it run for some time, and then restart it (by restarting the pipeline or Conduit), then it will start 
-generating the 100 records from scratch.
+The generator connector is one of [Conduit](https://github.com/ConduitIO/conduit)
+builtin plugins. It generates sample records using its source connector. It has
+no destination and trying to use that will result in an error.
 
 ### How to build it
 
@@ -17,71 +12,352 @@ Run `make`.
 
 Run `make test` to run all the unit tests.
 
-### How it works
-
-The data is generated in JSON format. The JSON objects themselves are generated using a field specification, which is
-explained in more details in the [Configuration section](#Configuration) below.
-
-The connector is great for getting started with Conduit but also for certain types of performance tests.
-
-It's possible to simulate a 'read' time for records. It's also possible to simulate bursts through "sleep and generate"
-cycles, where the connector is sleeping for some time (not generating any records), then generating records for the 
-specified time, and then repeating the same cycle. The connector always start with the sleeping phase.
-
 ### Configuration
 
-// TODO update this section
+Below is a list of all available configuration parameters:
 
-#### recordCount
-Number of records to be generated. -1 for no limit.
-* Required: false
-* Possible values: -1 or a non-negative number.
-* Default: "-1"
-* Example: "15" (generates 15 records)
+<!-- readmegen:source.parameters.table -->
+<table class="no-margin-table">
+  <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Default</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+<td>
 
-#### readTime
-The time it takes to 'read' a record.
-* Required: false
-* Possible values: A duration string, must not be negative. Also see: https://pkg.go.dev/time#ParseDuration
-* Default: "0s"
-* Example: "100ms" (generates records every 100ms)
+`burst.generateTime`
 
-#### format.type
-Format of the generated payload data.
-* Required: true
-* Possible values: `raw`, `structured`, `file`
-* Default: ""
-* Example: "raw" (generates a record, with raw data payload)
+</td>
+<td>
 
-#### format.options
-An options string for the type of format specified in `format.type`.
-* Required: true
-* Possible values:
-  * If `format.type: raw` or `format.type: structured`, `format.options` is a comma-separated list of name:type tokens,
-    where type can be: int, string, time, bool. `format.type` will define how the payload will be serialized (it will be either
-    raw or structured).
-  * If `format.type: file`, `format.options` is a path to a file, which will be taken as a payload for the generated records.
-The file will be cached.
-* Default: ""
-* Example: "id:int,name:string" (generates a struct with an ID field, type int, and a name field, type string)
+duration
 
-#### operation
-The value generated for the record's `operation` field.
-* Required: false
-* Possible values: `create`, `update`, `snapshot`, `delete`, `random` 
-* Default: `create`
-* Example: `random` (generates a record with a random operation field, using one of the four operations `create`, `update`, `snaphot`, `delete`)
+</td>
+<td>
 
-#### burst.sleepTime
-The time the generator 'sleeps' between bursts.
-* Required: false
-* Possible values: A duration string, must not be negative. Also see: https://pkg.go.dev/time#ParseDuration
-* Default: "0s"
-* Example: "30s" (the generator sleeps for 30 seconds, then started generating records)
+`1s`
 
-#### burst.generateTime
-The amount of time the generator is generating records. Has effect only if `burst.sleepTime` is set.
-* Required: false
-* Possible values: A duration string, must be positive. Also see: https://pkg.go.dev/time#ParseDuration
-* Default: max. duration in Go
-* Example: "60s" (the generator will be generating records for 60 seconds)
+</td>
+<td>
+
+The amount of time the generator is generating records in a burst. Has an effect only if `burst.sleepTime` is set.
+
+</td>
+  </tr>
+  <tr>
+<td>
+
+`burst.sleepTime`
+
+</td>
+<td>
+
+duration
+
+</td>
+<td>
+
+
+
+</td>
+<td>
+
+The time the generator "sleeps" between bursts.
+
+</td>
+  </tr>
+  <tr>
+<td>
+
+`collections.*.format.options.*`
+
+</td>
+<td>
+
+string
+
+</td>
+<td>
+
+
+
+</td>
+<td>
+
+The options for the `raw` and `structured` format types. It accepts pairs of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`.
+
+</td>
+  </tr>
+  <tr>
+<td>
+
+`collections.*.format.options.path`
+
+</td>
+<td>
+
+string
+
+</td>
+<td>
+
+
+
+</td>
+<td>
+
+Path to the input file (only applicable if the format type is `file`).
+
+</td>
+  </tr>
+  <tr>
+<td>
+
+`collections.*.format.type`
+
+</td>
+<td>
+
+string
+
+</td>
+<td>
+
+
+
+</td>
+<td>
+
+The format of the generated payload data (raw, structured, file).
+
+</td>
+  </tr>
+  <tr>
+<td>
+
+`collections.*.operations`
+
+</td>
+<td>
+
+string
+
+</td>
+<td>
+
+`create`
+
+</td>
+<td>
+
+Comma separated list of record operations to generate. Allowed values are "create", "update", "delete", "snapshot".
+
+</td>
+  </tr>
+  <tr>
+<td>
+
+`format.options.*`
+
+</td>
+<td>
+
+string
+
+</td>
+<td>
+
+
+
+</td>
+<td>
+
+The options for the `raw` and `structured` format types. It accepts pairs of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`.
+
+</td>
+  </tr>
+  <tr>
+<td>
+
+`format.options.path`
+
+</td>
+<td>
+
+string
+
+</td>
+<td>
+
+
+
+</td>
+<td>
+
+Path to the input file (only applicable if the format type is `file`).
+
+</td>
+  </tr>
+  <tr>
+<td>
+
+`format.type`
+
+</td>
+<td>
+
+string
+
+</td>
+<td>
+
+
+
+</td>
+<td>
+
+The format of the generated payload data (raw, structured, file).
+
+</td>
+  </tr>
+  <tr>
+<td>
+
+`operations`
+
+</td>
+<td>
+
+string
+
+</td>
+<td>
+
+`create`
+
+</td>
+<td>
+
+Comma separated list of record operations to generate. Allowed values are "create", "update", "delete", "snapshot".
+
+</td>
+  </tr>
+  <tr>
+<td>
+
+`rate`
+
+</td>
+<td>
+
+float
+
+</td>
+<td>
+
+
+
+</td>
+<td>
+
+The maximum rate in records per second, at which records are generated (0 means no rate limit).
+
+</td>
+  </tr>
+  <tr>
+<td>
+
+`recordCount`
+
+</td>
+<td>
+
+int
+
+</td>
+<td>
+
+
+
+</td>
+<td>
+
+Number of records to be generated (0 means infinite).
+
+</td>
+  </tr>
+</table>
+<!-- /readmegen:source.parameters.table -->
+
+> [!IMPORTANT]
+> Parameters starting with `collections.*` are used to configure the format and
+> operations for a specific collection. The `*` in the parameter name should be
+> replaced with the collection name.
+
+### Examples
+
+#### Bursts
+
+The following configuration generates 100 records in bursts of 10 records each,
+with a 1 second sleep time between bursts.
+
+> [!NOTE]
+> The generator currently has no concept of resuming work. For instance, below
+> we have configured it to generate 100 records, but if we restart the pipeline
+> (by stopping and starting the pipeline or by restarting Conduit), then it will
+> start generating the 100 records from scratch.
+
+```yaml
+version: 2.2
+pipelines:
+  - id: example
+    status: running
+    connectors:
+      - id: example
+        type: source
+        plugin: generator
+        settings:
+          # global settings
+          rate: 10
+          recordCount: 100
+          burst.generateTime: 1s
+          burst.sleepTime: 1s
+          # default collection
+          format.type: structured
+          format.options.id: int
+          format.options.name: string
+          operations: create
+```
+
+#### Collections
+
+The following configuration generates records forever with a steady rate of 1000
+records per second. Records are generated in the `users` and `orders` collections.
+The generated records have a different format, depending on the collection they
+belong to.
+
+```yaml
+version: 2.2
+pipelines:
+  - id: example
+    status: running
+    connectors:
+      - id: example
+        type: source
+        plugin: generator
+        settings:
+          # global settings
+          rate: 1000
+          # collection "users"
+          collections.users.format.type: structured
+          collections.users.format.options.id: int
+          collections.users.format.options.name: string
+          collections.users.operations: create
+          # collection "orders"
+          collections.orders.format.type: raw
+          collections.orders.format.options.id: int
+          collections.orders.format.options.product: string
+          collections.orders.operations: create,update,delete
+```
