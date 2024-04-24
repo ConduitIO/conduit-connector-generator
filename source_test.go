@@ -16,52 +16,63 @@ package generator
 
 import (
 	"context"
-	"encoding/json"
+	"maps"
 	"os"
 	"testing"
 	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/goccy/go-json"
 	"github.com/matryer/is"
 )
 
-func TestRead_RawData(t *testing.T) {
+func TestSource_Read_RawData(t *testing.T) {
 	is := is.New(t)
 	underTest := openTestSource(
 		t,
 		map[string]string{
-			RecordCount:   "1",
-			FormatType:    FormatRaw,
-			FormatOptions: "id:int,name:string,joined:time,admin:bool",
-			Operation:     "delete",
+			"recordCount":           "1",
+			"format.type":           "raw",
+			"format.options.id":     "int",
+			"format.options.name":   "string",
+			"format.options.joined": "time",
+			"format.options.admin":  "bool",
+			"operations":            "delete",
 		},
 	)
 
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
+	now := time.Now()
 
-	v, ok := rec.Payload.After.(sdk.RawData)
+	v, ok := rec.Payload.Before.(sdk.RawData)
 	is.True(ok)
 
-	recStruct := struct {
-		id     int32
-		name   string
-		joined time.Time
-		admin  bool
-	}{}
-	err = json.Unmarshal(v, &recStruct) //nolint:staticcheck // test struct
+	recMap := make(map[string]any)
+	err = json.Unmarshal(v, &recMap)
 	is.NoErr(err)
+
+	is.Equal(len(recMap), 4)
+	is.True(recMap["id"].(float64) > 0)
+	is.True(recMap["name"].(string) != "")
+	_, ok = recMap["admin"].(bool)
+	is.True(ok)
+
+	ts := recMap["joined"].(float64)
+	joined := time.Unix(0, int64(ts))
+	is.True(!joined.After(now))
+	is.True(joined.After(now.Add(-time.Millisecond * 10)))
 }
 
-func TestRead_PayloadFile(t *testing.T) {
+func TestSource_Read_PayloadFile(t *testing.T) {
 	is := is.New(t)
 	underTest := openTestSource(
 		t,
 		map[string]string{
-			RecordCount:   "1",
-			FormatType:    FormatFile,
-			FormatOptions: "./source_test.go",
-			Operation:     "update",
+			"recordCount":         "1",
+			"format.type":         "file",
+			"format.options.path": "./source_test.go",
+			"operations":          "update",
 		},
 	)
 
@@ -76,115 +87,108 @@ func TestRead_PayloadFile(t *testing.T) {
 	is.Equal(expected, v.Bytes())
 }
 
-func TestRead_StructuredData(t *testing.T) {
+func TestSource_Read_StructuredData(t *testing.T) {
 	is := is.New(t)
 	underTest := openTestSource(
 		t,
 		map[string]string{
-			RecordCount:   "1",
-			FormatType:    FormatStructured,
-			FormatOptions: "id:int,name:string,joined:time,admin:bool",
-			Operation:     "snapshot",
+			"recordCount":           "1",
+			"format.type":           "structured",
+			"format.options.id":     "int",
+			"format.options.name":   "string",
+			"format.options.joined": "time",
+			"format.options.admin":  "bool",
+			"operations":            "snapshot",
 		},
 	)
 
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
+	now := time.Now()
 
 	v, ok := rec.Payload.After.(sdk.StructuredData)
 	is.True(ok)
 
-	recStruct := struct {
-		id     int32
-		name   string
-		joined time.Time
-		admin  bool
-	}{}
-	// map to json to struct, so we can check types of all fields easily
-	bytes, err := json.Marshal(v)
-	is.NoErr(err)
-	err = json.Unmarshal(bytes, &recStruct) //nolint:staticcheck // test struct
-	is.NoErr(err)
+	is.Equal(len(v), 4)
+	is.True(v["id"].(int) > 0)
+	is.True(v["name"].(string) != "")
+	_, ok = v["admin"].(bool)
+	is.True(ok)
+
+	joined := time.Unix(0, v["joined"].(int64))
+	is.True(!joined.After(now))
+	is.True(joined.After(now.Add(-time.Millisecond * 10)))
 }
 
-func TestSource_Read_SleepGenerate(t *testing.T) {
+func TestSource_Read_RateLimit(t *testing.T) {
+	cfg := map[string]string{
+		"burst.sleepTime":    "100ms",
+		"burst.generateTime": "150ms",
+		"format.type":        "raw",
+		"format.options.id":  "int",
+		"operations":         "create,update",
+	}
+
+	// Test rate parameter
+	t.Run("parameter-rate", func(t *testing.T) {
+		cfg := maps.Clone(cfg)
+		cfg["rate"] = "20"
+		testSourceRateLimit(t, cfg)
+	})
+	// Test readTime parameter
+	t.Run("parameter-readTime", func(t *testing.T) {
+		cfg := maps.Clone(cfg)
+		cfg["readTime"] = "50ms"
+		testSourceRateLimit(t, cfg)
+	})
+}
+
+func testSourceRateLimit(t *testing.T, cfg map[string]string) {
+	ctx := context.Background()
+
+	underTest := openTestSource(t, cfg)
+
+	const epsilon = time.Millisecond * 10
+	readAssertDelay := func(is *is.I, expectedDelay time.Duration) {
+		is.Helper()
+		start := time.Now()
+		_, err := underTest.Read(ctx)
+		dur := time.Since(start)
+		is.NoErr(err)
+		is.True(dur >= expectedDelay-epsilon) // expected longer delay
+		is.True(dur <= expectedDelay+epsilon) // expected shorter delay
+	}
+
 	is := is.New(t)
 
-	underTest := openTestSource(
-		t,
-		map[string]string{
-			ReadTime:      "10ms",
-			SleepTime:     "200ms",
-			GenerateTime:  "50ms",
-			FormatType:    FormatRaw,
-			FormatOptions: "id:int",
-			Operation:     "random",
-		},
-	)
+	// We start in the generate cycle, we can test the rate limiting here.
+	// The first record should be read immediately.
+	readAssertDelay(is, 0)
 
-	type result struct {
-		err      error
-		duration time.Duration
-	}
+	// The second record should already be rate limited and delayed by 50ms.
+	readAssertDelay(is, 50*time.Millisecond)
 
-	// first read: sleep time + read time + bit of buffer
-	results := make(chan result)
-	go func() {
-		start := time.Now()
-		_, err := underTest.Read(context.Background())
+	// If we wait for 50ms before reading, the next record should be read immediately.
+	time.Sleep(50 * time.Millisecond)
+	readAssertDelay(is, 0)
 
-		results <- result{err: err, duration: time.Since(start)}
-	}()
+	// If we wait for 25ms, the next record should be read after 25ms.
+	time.Sleep(25 * time.Millisecond)
+	readAssertDelay(is, 25*time.Millisecond)
 
-	select {
-	case r := <-results:
-		is.NoErr(r.err)
-		is.True(r.duration >= 210*time.Millisecond) // expected source to sleep for given time
-	case <-time.After(220 * time.Millisecond):
-		is.Fail() // timed out waiting for record
-	}
+	// By now we should have reached the end of burst.generateTime (150ms).
+	// If we try to read a record now we should have to wait for 100ms (burst.sleepTime).
+	readAssertDelay(is, 100*time.Millisecond)
 
-	// we have 40ms left for generating new records
-	// (50ms total, minus the 10ms for the first record)
-	// so we read 4 more records here
-	results = make(chan result)
-	go func() {
-		start := time.Now()
-		var err error
-		for i := 1; i <= 4; i++ {
-			_, err = underTest.Read(context.Background())
-			is.NoErr(err)
-		}
+	// After the sleep cycle we are again in the generate cycle. Reading a record
+	// should have the normal delay of 50ms.
+	readAssertDelay(is, 50*time.Millisecond)
 
-		results <- result{err: err, duration: time.Since(start)}
-	}()
-
-	select {
-	case r := <-results:
-		is.NoErr(r.err)
-		is.True(r.duration >= 40*time.Millisecond) // expected source to sleep for given time
-	case <-time.After(50 * time.Millisecond):
-		is.Fail() // timed out waiting for record
-	}
-
-	// one more read, to verify that we got through another sleep cycle,
-	// and started generating records again
-	// sleep time + read time + bit of buffer
-	results = make(chan result)
-	go func() {
-		start := time.Now()
-		_, err := underTest.Read(context.Background())
-
-		results <- result{err: err, duration: time.Since(start)}
-	}()
-
-	select {
-	case r := <-results:
-		is.NoErr(r.err)
-		is.True(r.duration >= 210*time.Millisecond) // expected source to sleep for given time
-	case <-time.After(220 * time.Millisecond):
-		is.Fail() // timed out waiting for record
-	}
+	// Wait for 100ms (remaining generate time) + 50ms (half of sleep time) = 150ms,
+	// so we are in the middle of the sleep cycle. Reading at that point should
+	// take 50ms.
+	time.Sleep(150 * time.Millisecond)
+	readAssertDelay(is, 50*time.Millisecond)
 }
 
 func openTestSource(t *testing.T, cfg map[string]string) sdk.Source {

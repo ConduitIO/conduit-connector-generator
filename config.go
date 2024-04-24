@@ -12,168 +12,199 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate paramgen -output config_paramgen.go Config
+
 package generator
 
 import (
 	"errors"
 	"fmt"
-	"math"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/conduitio/conduit-connector-generator/internal"
+	sdk "github.com/conduitio/conduit-connector-sdk"
+	"golang.org/x/time/rate"
 )
 
 const (
-	RecordCount   = "recordCount"
-	ReadTime      = "readTime"
-	SleepTime     = "burst.sleepTime"
-	GenerateTime  = "burst.generateTime"
-	FormatType    = "format.type"
-	FormatOptions = "format.options"
-	Operation     = "operation"
-
-	FormatRaw        = "raw"
-	FormatStructured = "structured"
-	FormatFile       = "file"
+	FormatTypeRaw        = "raw"
+	FormatTypeStructured = "structured"
+	FormatTypeFile       = "file"
 )
-
-var (
-	knownFieldTypes = []string{"int", "string", "time", "bool"}
-	requiredFields  = []string{FormatType, FormatOptions}
-)
-
-type RecordConfig struct {
-	FormatType    string
-	FormatOptions interface{}
-	Operation     string
-}
-
-func ParseRecordConfig(formatType, formatOptions, operation string) (RecordConfig, error) {
-	c := RecordConfig{
-		FormatOptions: make(map[string]interface{}),
-		Operation:     operation,
-	}
-	// check if it's a recognized format
-	switch formatType {
-	case FormatFile:
-		c.FormatType = FormatFile
-		if formatOptions == "" {
-			return RecordConfig{}, errors.New("file path not specified")
-		}
-		c.FormatOptions = formatOptions
-	case FormatStructured, FormatRaw:
-		fields, err := parseFields(formatOptions)
-		if err != nil {
-			return RecordConfig{}, fmt.Errorf("failed parsing fields: %w", err)
-		}
-		c.FormatType = formatType
-		c.FormatOptions = fields
-	default:
-		return RecordConfig{}, fmt.Errorf("unknown payload format %q", formatType)
-	}
-
-	return c, nil
-}
 
 type Config struct {
-	RecordCount  int64
-	ReadTime     time.Duration
-	SleepTime    time.Duration
-	GenerateTime time.Duration
-	RecordConfig RecordConfig
+	Burst BurstConfig `json:"burst"`
+	// Number of records to be generated (0 means infinite).
+	RecordCount int `json:"recordCount" validate:"gt=-1"`
+	// The time it takes to 'read' a record.
+	// Deprecated: use `rate` instead.
+	ReadTime time.Duration `json:"readTime"`
+	// The maximum rate in records per second, at which records are generated (0
+	// means no rate limit).
+	Rate float64 `json:"rate"`
+
+	// Configuration for default collection (i.e. records without a collection).
+	// Kept for backwards compatibility.
+	CollectionConfig
+	Collections map[string]CollectionConfig `json:"collections"`
 }
 
-func Parse(config map[string]string) (Config, error) {
-	err := checkRequired(config)
-	if err != nil {
-		return Config{}, err
+type BurstConfig struct {
+	// The time the generator "sleeps" between bursts.
+	SleepTime time.Duration `json:"sleepTime"`
+	// The amount of time the generator is generating records in a burst. Has an
+	// effect only if `burst.sleepTime` is set.
+	GenerateTime time.Duration `json:"generateTime" default:"1s"`
+}
+
+type CollectionConfig struct {
+	// Comma separated list of record operations to generate. Allowed values are
+	// "create", "update", "delete", "snapshot".
+	Operations []string     `json:"operations" default:"create" validate:"required"`
+	Format     FormatConfig `json:"format"`
+}
+
+type FormatConfig struct {
+	// The format of the generated payload data (raw, structured, file).
+	Type string `json:"type" validate:"inclusion=raw|structured|file"`
+	// The options for the `raw` and `structured` format types. It accepts pairs
+	// of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`.
+	Options map[string]string `json:"options"`
+	// Path to the input file (only applicable if the format type is `file`).
+	FileOptionsPath string `json:"options.path"`
+}
+
+func (c Config) Validate() error {
+	var errs []error
+
+	// Validate readTime and rate.
+	if c.ReadTime > 0 && c.Rate > 0 {
+		errs = append(errs, errors.New(`cannot specify both "readTime" and "rate", "readTime" is deprecated, please only specify "rate"`))
+	}
+	if c.ReadTime < 0 {
+		errs = append(errs, errors.New(`"readTime" should be greater or equal to 0`))
+	}
+	if c.Rate < 0 {
+		errs = append(errs, errors.New(`"rate" should be greater or equal to 0`))
 	}
 
-	dh := durationHelper{}
-	parsed := Config{}
+	// Validate burst.
+	if c.Burst.SleepTime < 0 {
+		errs = append(errs, errors.New(`"burst.sleepTime" should be greater or equal to 0`))
+	}
+	if c.Burst.SleepTime > 0 && c.Burst.GenerateTime <= 0 {
+		errs = append(errs, errors.New(`"burst.generateTime" should be greater than 0`))
+	}
 
-	// parse record count
-	// default value
-	parsed.RecordCount = -1
-	if recCount, ok := config[RecordCount]; ok {
-		recCountParsed, err := strconv.ParseInt(recCount, 10, 64)
+	// Validate collections.
+	collections := c.GetCollectionConfigs()
+	if len(collections) == 0 {
+		errs = append(errs, errors.New("invalid configuration, please configure at least one collection using `format.type` or `collections.*.format.type`"))
+	}
+	for collection, cfg := range collections {
+		err := cfg.Validate()
 		if err != nil {
-			return Config{}, fmt.Errorf("invalid record count: %w", err)
+			if collection == "" {
+				err = fmt.Errorf("failed validating default collection: %w", err)
+			} else {
+				err = fmt.Errorf("failed validating collection %q: %w", collection, err)
+			}
+			errs = append(errs, err)
 		}
-		parsed.RecordCount = recCountParsed
 	}
 
-	readTime, err := dh.parseNonNegative(config[ReadTime], time.Duration(0))
-	if err != nil {
-		return Config{}, fmt.Errorf("invalid read time: %w", err)
-	}
-	parsed.ReadTime = readTime
-
-	sleepTime, err := dh.parseNonNegative(config[SleepTime], time.Duration(0))
-	if err != nil {
-		return Config{}, fmt.Errorf("invalid sleep time: %w", err)
-	}
-	parsed.SleepTime = sleepTime
-
-	genTime, err := dh.parsePositive(config[GenerateTime], time.Duration(math.MaxInt64))
-	if err != nil {
-		return Config{}, fmt.Errorf("invalid generate time: %w", err)
-	}
-	parsed.GenerateTime = genTime
-
-	rc, err := ParseRecordConfig(config[FormatType], config[FormatOptions], config[Operation])
-	if err != nil {
-		return Config{}, fmt.Errorf("failed configuring payload generator: %w", err)
-	}
-	parsed.RecordConfig = rc
-
-	return parsed, nil
+	return errors.Join(errs...)
 }
 
-func checkRequired(cfg map[string]string) error {
-	var missing []string
-	for _, reqKey := range requiredFields {
-		_, exists := cfg[reqKey]
-		if !exists {
-			missing = append(missing, reqKey)
-		}
+func (c Config) RateLimit() rate.Limit {
+	if c.Rate == 0 && c.ReadTime > 0 {
+		// Convert read time to rate limit.
+		return rate.Every(c.ReadTime)
 	}
-	if len(missing) > 0 {
-		return fmt.Errorf("required parameters missing %v", missing)
+	return rate.Limit(c.Rate)
+}
+
+func (c Config) GetCollectionConfigs() map[string]CollectionConfig {
+	collections := make(map[string]CollectionConfig, len(c.Collections)+1)
+	if c.Format.Type != "" {
+		collections[""] = c.CollectionConfig
+	}
+	for k, v := range c.Collections {
+		collections[k] = v
+	}
+	return collections
+}
+
+func (c CollectionConfig) Validate() error {
+	var errs []error
+
+	_, err := c.parseOperations()
+	if err != nil {
+		errs = append(errs, err)
+	}
+	err = c.Format.Validate()
+	if err != nil {
+		errs = append(errs, fmt.Errorf("failed validating format: %w", err))
+	}
+
+	return errors.Join(errs...)
+}
+
+func (c CollectionConfig) SdkOperations() []sdk.Operation {
+	// We can safely ignore the error here, it has been validated.
+	op, _ := c.parseOperations()
+	return op
+}
+
+func (c CollectionConfig) parseOperations() ([]sdk.Operation, error) {
+	operations := make([]sdk.Operation, len(c.Operations))
+	for i, raw := range c.Operations {
+		var op sdk.Operation
+		err := op.UnmarshalText([]byte(raw))
+		if err != nil {
+			return nil, fmt.Errorf("failed parsing operation: %w", err)
+		}
+		operations[i] = op
+	}
+	return operations, nil
+}
+
+func (c FormatConfig) Validate() error {
+	switch c.Type {
+	case FormatTypeFile:
+		if c.FileOptionsPath == "" {
+			return errors.New("file path not specified")
+		}
+	case FormatTypeStructured, FormatTypeRaw:
+		err := c.validateFields(c.Options)
+		if err != nil {
+			return fmt.Errorf("failed parsing fields: %w", err)
+		}
+	default:
+		return fmt.Errorf("unknown format type %q", c.Type)
 	}
 	return nil
 }
 
-func parseFields(fieldsConcat string) (map[string]string, error) {
-	if fieldsConcat == "" {
-		return nil, nil
+func (c FormatConfig) validateFields(fields map[string]string) error {
+	var errs []error
+	for f, t := range fields {
+		if strings.Trim(f, " ") == "" {
+			errs = append(errs, fmt.Errorf("got empty field name in %q", f))
+		}
+		if strings.Trim(t, " ") == "" {
+			errs = append(errs, fmt.Errorf("got empty type in %q", f))
+		}
+		if !c.knownType(t) {
+			errs = append(errs, fmt.Errorf("unknown data type in %q", f))
+		}
 	}
-	fieldsMap := map[string]string{}
-	fields := strings.Split(fieldsConcat, ",")
-	for _, field := range fields {
-		if strings.Trim(field, " ") == "" {
-			return nil, fmt.Errorf("got empty field spec in %q", field)
-		}
-		fieldSpec := strings.Split(field, ":")
-		if validFieldSpec(fieldSpec) {
-			return nil, fmt.Errorf("invalid field spec %q", field)
-		}
-		if !knownType(fieldSpec[1]) {
-			return nil, fmt.Errorf("unknown data type in %q", field)
-		}
-		fieldsMap[fieldSpec[0]] = fieldSpec[1]
-	}
-	return fieldsMap, nil
+	return errors.Join(errs...)
 }
 
-func validFieldSpec(fieldSpec []string) bool {
-	return len(fieldSpec) != 2 ||
-		strings.Trim(fieldSpec[0], " ") == "" ||
-		strings.Trim(fieldSpec[1], " ") == ""
-}
-
-func knownType(typeString string) bool {
-	for _, t := range knownFieldTypes {
+func (c FormatConfig) knownType(typeString string) bool {
+	for _, t := range internal.KnownTypes {
 		if strings.ToLower(typeString) == t {
 			return true
 		}
