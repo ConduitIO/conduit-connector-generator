@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"time"
 
-	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/conduitio/conduit-commons/opencdc"
 	"github.com/goccy/go-json"
 )
 
@@ -30,40 +30,40 @@ var KnownTypes = []string{"int", "string", "time", "bool"}
 // RecordGenerator is an interface for generating records.
 type RecordGenerator interface {
 	// Next generates the next record.
-	Next() sdk.Record
+	Next() opencdc.Record
 }
 
 type baseRecordGenerator struct {
 	collection   string
-	operations   []sdk.Operation
-	generateData func() sdk.Data
+	operations   []opencdc.Operation
+	generateData func() opencdc.Data
 
 	count int
 }
 
-func (g *baseRecordGenerator) Next() sdk.Record {
+func (g *baseRecordGenerator) Next() opencdc.Record {
 	g.count++
 
-	metadata := make(sdk.Metadata)
+	metadata := make(opencdc.Metadata)
 	metadata.SetReadAt(time.Now())
 	if g.collection != "" {
 		metadata.SetCollection(g.collection)
 	}
 
-	rec := sdk.Record{
-		Position:  sdk.Position(strconv.Itoa(g.count)),
+	rec := opencdc.Record{
+		Position:  opencdc.Position(strconv.Itoa(g.count)),
 		Operation: g.operations[rand.Intn(len(g.operations))],
 		Metadata:  metadata,
-		Key:       sdk.RawData(randomWord()),
+		Key:       opencdc.RawData(randomWord()),
 	}
 
 	switch rec.Operation {
-	case sdk.OperationSnapshot, sdk.OperationCreate:
+	case opencdc.OperationSnapshot, opencdc.OperationCreate:
 		rec.Payload.After = g.generateData()
-	case sdk.OperationUpdate:
+	case opencdc.OperationUpdate:
 		rec.Payload.Before = g.generateData()
 		rec.Payload.After = g.generateData()
-	case sdk.OperationDelete:
+	case opencdc.OperationDelete:
 		rec.Payload.Before = g.generateData()
 	}
 
@@ -76,7 +76,7 @@ func (g *baseRecordGenerator) Next() sdk.Record {
 // payload data.
 func NewFileRecordGenerator(
 	collection string,
-	operations []sdk.Operation,
+	operations []opencdc.Operation,
 	path string,
 ) (RecordGenerator, error) {
 	// Files are cached, so that the time to read files doesn't affect generator
@@ -88,8 +88,8 @@ func NewFileRecordGenerator(
 	return &baseRecordGenerator{
 		collection: collection,
 		operations: operations,
-		generateData: func() sdk.Data {
-			return sdk.RawData(bytes)
+		generateData: func() opencdc.Data {
+			return opencdc.RawData(bytes)
 		},
 	}, nil
 }
@@ -99,13 +99,13 @@ func NewFileRecordGenerator(
 // for the structured data. The types can be one of: int, string, time, bool.
 func NewStructuredRecordGenerator(
 	collection string,
-	operations []sdk.Operation,
+	operations []opencdc.Operation,
 	fields map[string]string,
 ) (RecordGenerator, error) {
 	return &baseRecordGenerator{
 		collection: collection,
 		operations: operations,
-		generateData: func() sdk.Data {
+		generateData: func() opencdc.Data {
 			return randomStructuredData(fields)
 		},
 	}, nil
@@ -116,20 +116,20 @@ func NewStructuredRecordGenerator(
 // data. The types can be one of: int, string, time, bool.
 func NewRawRecordGenerator(
 	collection string,
-	operations []sdk.Operation,
+	operations []opencdc.Operation,
 	fields map[string]string,
 ) (RecordGenerator, error) {
 	return &baseRecordGenerator{
 		collection: collection,
 		operations: operations,
-		generateData: func() sdk.Data {
+		generateData: func() opencdc.Data {
 			return randomRawData(fields)
 		},
 	}, nil
 }
 
-func randomStructuredData(fields map[string]string) sdk.Data {
-	data := make(sdk.StructuredData)
+func randomStructuredData(fields map[string]string) opencdc.Data {
+	data := make(opencdc.StructuredData)
 	for field, typ := range fields {
 		switch typ {
 		case "int":
@@ -147,7 +147,7 @@ func randomStructuredData(fields map[string]string) sdk.Data {
 	return data
 }
 
-func randomRawData(fields map[string]string) sdk.RawData {
+func randomRawData(fields map[string]string) opencdc.RawData {
 	data := randomStructuredData(fields)
 	bytes, err := json.Marshal(data)
 	if err != nil {
