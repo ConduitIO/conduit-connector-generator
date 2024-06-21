@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/conduitio/conduit-commons/opencdc"
 	"github.com/conduitio/conduit-connector-generator/internal"
-	sdk "github.com/conduitio/conduit-connector-sdk"
 	"golang.org/x/time/rate"
 )
 
@@ -151,16 +151,16 @@ func (c CollectionConfig) Validate() error {
 	return errors.Join(errs...)
 }
 
-func (c CollectionConfig) SdkOperations() []sdk.Operation {
+func (c CollectionConfig) SdkOperations() []opencdc.Operation {
 	// We can safely ignore the error here, it has been validated.
 	op, _ := c.parseOperations()
 	return op
 }
 
-func (c CollectionConfig) parseOperations() ([]sdk.Operation, error) {
-	operations := make([]sdk.Operation, len(c.Operations))
+func (c CollectionConfig) parseOperations() ([]opencdc.Operation, error) {
+	operations := make([]opencdc.Operation, len(c.Operations))
 	for i, raw := range c.Operations {
-		var op sdk.Operation
+		var op opencdc.Operation
 		err := op.UnmarshalText([]byte(raw))
 		if err != nil {
 			return nil, fmt.Errorf("failed parsing operation: %w", err)

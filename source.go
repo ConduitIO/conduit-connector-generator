@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/conduitio/conduit-commons/config"
+	"github.com/conduitio/conduit-commons/opencdc"
 	"github.com/conduitio/conduit-connector-generator/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"golang.org/x/time/rate"
@@ -40,19 +42,19 @@ func NewSource() sdk.Source {
 	return sdk.SourceWithMiddleware(&Source{}, sdk.DefaultSourceMiddleware()...)
 }
 
-func (s *Source) Parameters() map[string]sdk.Parameter {
+func (s *Source) Parameters() config.Parameters {
 	return s.config.Parameters()
 }
 
-func (s *Source) Configure(_ context.Context, config map[string]string) error {
-	err := sdk.Util.ParseConfig(config, &s.config)
+func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
+	err := sdk.Util.ParseConfig(ctx, cfg, &s.config, NewSource().Parameters())
 	if err != nil {
 		return err
 	}
 	return s.config.Validate()
 }
 
-func (s *Source) Open(_ context.Context, _ sdk.Position) error {
+func (s *Source) Open(_ context.Context, _ opencdc.Position) error {
 	var generators []internal.RecordGenerator
 	for collection, cfg := range s.config.GetCollectionConfigs() {
 		var gen internal.RecordGenerator
@@ -82,16 +84,16 @@ func (s *Source) Open(_ context.Context, _ sdk.Position) error {
 	return nil
 }
 
-func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
+func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 	if ctx.Err() != nil {
 		// stop producing new records if context is canceled
-		return sdk.Record{}, ctx.Err()
+		return opencdc.Record{}, ctx.Err()
 	}
 
 	if s.config.RecordCount > 0 && s.recordCount >= s.config.RecordCount {
 		// nothing more to produce, block until context is done
 		<-ctx.Done()
-		return sdk.Record{}, ctx.Err()
+		return opencdc.Record{}, ctx.Err()
 	}
 
 	// prepare next record in advance to avoid losing time in case of rate limiting
@@ -101,7 +103,7 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	if s.config.Burst.SleepTime > 0 {
 		err := s.sleepBetweenBursts(ctx)
 		if err != nil {
-			return sdk.Record{}, err
+			return opencdc.Record{}, err
 		}
 	}
 
@@ -109,7 +111,7 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	if s.rateLimiter != nil {
 		err := s.rateLimiter.Wait(ctx)
 		if err != nil {
-			return sdk.Record{}, err
+			return opencdc.Record{}, err
 		}
 	}
 
@@ -145,7 +147,7 @@ func (s *Source) sleepBetweenBursts(ctx context.Context) error {
 	}
 }
 
-func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
+func (s *Source) Ack(ctx context.Context, position opencdc.Position) error {
 	sdk.Logger(ctx).Debug().Str("position", string(position)).Msg("got ack")
 	return nil // no ack needed
 }

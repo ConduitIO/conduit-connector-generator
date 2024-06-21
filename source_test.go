@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/goccy/go-json"
 	"github.com/matryer/is"
@@ -45,7 +46,7 @@ func TestSource_Read_RawData(t *testing.T) {
 	is.NoErr(err)
 	now := time.Now()
 
-	v, ok := rec.Payload.Before.(sdk.RawData)
+	v, ok := rec.Payload.Before.(opencdc.RawData)
 	is.True(ok)
 
 	recMap := make(map[string]any)
@@ -79,7 +80,7 @@ func TestSource_Read_PayloadFile(t *testing.T) {
 	rec, err := underTest.Read(context.Background())
 	is.NoErr(err)
 
-	v, ok := rec.Payload.After.(sdk.RawData)
+	v, ok := rec.Payload.After.(opencdc.RawData)
 	is.True(ok)
 
 	expected, err := os.ReadFile("./source_test.go")
@@ -106,7 +107,7 @@ func TestSource_Read_StructuredData(t *testing.T) {
 	is.NoErr(err)
 	now := time.Now()
 
-	v, ok := rec.Payload.After.(sdk.StructuredData)
+	v, ok := rec.Payload.After.(opencdc.StructuredData)
 	is.True(ok)
 
 	is.Equal(len(v), 4)

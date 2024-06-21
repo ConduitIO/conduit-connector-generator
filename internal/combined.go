@@ -18,7 +18,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/conduitio/conduit-commons/opencdc"
 )
 
 // Combine combines multiple record generators into one. It will randomly
@@ -36,7 +36,7 @@ type combinedRecordGenerator struct {
 	generators []RecordGenerator
 }
 
-func (g *combinedRecordGenerator) Next() sdk.Record {
+func (g *combinedRecordGenerator) Next() opencdc.Record {
 	i := rand.Intn(len(g.generators))
 	gen := g.generators[i]
 	rec := gen.Next()
