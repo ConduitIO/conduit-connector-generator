@@ -69,7 +69,7 @@ type FormatConfig struct {
 	// The format of the generated payload data (raw, structured, file).
 	Type string `json:"type" validate:"inclusion=raw|structured|file"`
 	// The options for the `raw` and `structured` format types. It accepts pairs
-	// of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`.
+	// of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`, `duration`.
 	Options map[string]string `json:"options"`
 	// Path to the input file (only applicable if the format type is `file`).
 	FileOptionsPath string `json:"options.path"`

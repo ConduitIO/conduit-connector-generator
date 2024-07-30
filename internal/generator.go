@@ -25,7 +25,7 @@ import (
 	"github.com/goccy/go-json"
 )
 
-var KnownTypes = []string{"int", "string", "time", "bool"}
+var KnownTypes = []string{"int", "string", "time", "bool", "duration"}
 
 // RecordGenerator is an interface for generating records.
 type RecordGenerator interface {
@@ -45,7 +45,7 @@ func (g *baseRecordGenerator) Next() opencdc.Record {
 	g.count++
 
 	metadata := make(opencdc.Metadata)
-	metadata.SetReadAt(time.Now())
+	metadata.SetCreatedAt(time.Now())
 	if g.collection != "" {
 		metadata.SetCollection(g.collection)
 	}
@@ -137,7 +137,9 @@ func randomStructuredData(fields map[string]string) opencdc.Data {
 		case "string":
 			data[field] = randomWord()
 		case "time":
-			data[field] = time.Now().UnixNano()
+			data[field] = time.Now().UTC()
+		case "duration":
+			data[field] = time.Duration(rand.Intn(1000)) * time.Second
 		case "bool":
 			data[field] = rand.Int()%2 == 0
 		default:
