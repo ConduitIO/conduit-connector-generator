@@ -91,7 +91,7 @@ string
 </td>
 <td>
 
-The options for the `raw` and `structured` format types. It accepts pairs of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`.
+The options for the `raw` and `structured` format types. It accepts pairs of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`, `duration`.
 
 </td>
   </tr>
@@ -179,7 +179,7 @@ string
 </td>
 <td>
 
-The options for the `raw` and `structured` format types. It accepts pairs of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`.
+The options for the `raw` and `structured` format types. It accepts pairs of field names and field types, where the type can be one of: `int`, `string`, `time`, `bool`, `duration`.
 
 </td>
   </tr>
