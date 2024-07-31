@@ -32,13 +32,15 @@ func TestSource_Read_RawData(t *testing.T) {
 	underTest := openTestSource(
 		t,
 		map[string]string{
-			"recordCount":           "1",
-			"format.type":           "raw",
-			"format.options.id":     "int",
-			"format.options.name":   "string",
-			"format.options.joined": "time",
-			"format.options.admin":  "bool",
-			"operations":            "delete",
+			"recordCount":            "1",
+			"format.type":            "raw",
+			"format.options.id":      "int",
+			"format.options.name":    "string",
+			"format.options.joined":  "time",
+			"format.options.admin":   "bool",
+			"format.options.timeout": "duration",
+
+			"operations": "delete",
 		},
 	)
 
@@ -53,14 +55,18 @@ func TestSource_Read_RawData(t *testing.T) {
 	err = json.Unmarshal(v, &recMap)
 	is.NoErr(err)
 
-	is.Equal(len(recMap), 4)
+	is.Equal(len(recMap), 5)
 	is.True(recMap["id"].(float64) > 0)
 	is.True(recMap["name"].(string) != "")
 	_, ok = recMap["admin"].(bool)
 	is.True(ok)
+	dur, ok := recMap["timeout"].(float64)
+	is.True(ok)
+	is.True(dur > 0)
 
-	ts := recMap["joined"].(float64)
-	joined := time.Unix(0, int64(ts))
+	ts := recMap["joined"].(string)
+	joined, err := time.Parse(time.RFC3339Nano, ts)
+	is.NoErr(err)
 	is.True(!joined.After(now))
 	is.True(joined.After(now.Add(-time.Millisecond * 10)))
 }
@@ -93,13 +99,14 @@ func TestSource_Read_StructuredData(t *testing.T) {
 	underTest := openTestSource(
 		t,
 		map[string]string{
-			"recordCount":           "1",
-			"format.type":           "structured",
-			"format.options.id":     "int",
-			"format.options.name":   "string",
-			"format.options.joined": "time",
-			"format.options.admin":  "bool",
-			"operations":            "snapshot",
+			"recordCount":            "1",
+			"format.type":            "structured",
+			"format.options.id":      "int",
+			"format.options.name":    "string",
+			"format.options.joined":  "time",
+			"format.options.admin":   "bool",
+			"format.options.timeout": "duration",
+			"operations":             "snapshot",
 		},
 	)
 
@@ -110,13 +117,17 @@ func TestSource_Read_StructuredData(t *testing.T) {
 	v, ok := rec.Payload.After.(opencdc.StructuredData)
 	is.True(ok)
 
-	is.Equal(len(v), 4)
+	is.Equal(len(v), 5)
 	is.True(v["id"].(int) > 0)
 	is.True(v["name"].(string) != "")
 	_, ok = v["admin"].(bool)
 	is.True(ok)
+	dur, ok := v["timeout"].(time.Duration)
+	is.True(ok)
+	is.True(dur > 0)
 
-	joined := time.Unix(0, v["joined"].(int64))
+	joined, ok := v["joined"].(time.Time)
+	is.True(ok)
 	is.True(!joined.After(now))
 	is.True(joined.After(now.Add(-time.Millisecond * 10)))
 }
@@ -195,7 +206,7 @@ func testSourceRateLimit(t *testing.T, cfg map[string]string) {
 func openTestSource(t *testing.T, cfg map[string]string) sdk.Source {
 	is := is.New(t)
 
-	s := NewSource()
+	s := &Source{}
 	t.Cleanup(func() {
 		_ = s.Teardown(context.Background())
 	})
