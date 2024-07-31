@@ -4,7 +4,7 @@ go 1.22.5
 
 require (
 	github.com/conduitio/conduit-commons v0.2.1-0.20240717151024-0c8d1f406cb2
-	github.com/conduitio/conduit-connector-sdk v0.9.2-0.20240728120159-33cabe77dc28
+	github.com/conduitio/conduit-connector-sdk v0.9.2-0.20240731123633-05f6d05cf002
 	github.com/goccy/go-json v0.10.3
 	github.com/golangci/golangci-lint v1.59.1
 	github.com/matryer/is v1.4.1
@@ -47,7 +47,7 @@ require (
 	github.com/charithe/durationcheck v0.0.10 // indirect
 	github.com/chavacava/garif v0.1.0 // indirect
 	github.com/ckaznocha/intrange v0.1.2 // indirect
-	github.com/conduitio/conduit-connector-protocol v0.6.1-0.20240724140503-f2dd0a3e4d36 // indirect
+	github.com/conduitio/conduit-connector-protocol v0.6.1-0.20240730102156-29a2e67ad980 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
 	github.com/daixiang0/gci v0.13.4 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
