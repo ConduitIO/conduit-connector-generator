@@ -3,8 +3,8 @@ module github.com/conduitio/conduit-connector-generator
 go 1.22.5
 
 require (
-	github.com/conduitio/conduit-commons v0.2.1-0.20240717151024-0c8d1f406cb2
-	github.com/conduitio/conduit-connector-sdk v0.9.2-0.20240731123633-05f6d05cf002
+	github.com/conduitio/conduit-commons v0.2.1-0.20240801113202-731b460a2c58
+	github.com/conduitio/conduit-connector-sdk v0.9.2-0.20240801124546-62b9c6876e63
 	github.com/goccy/go-json v0.10.3
 	github.com/golangci/golangci-lint v1.59.1
 	github.com/matryer/is v1.4.1
@@ -86,7 +86,7 @@ require (
 	github.com/gostaticanalysis/comment v1.4.2 // indirect
 	github.com/gostaticanalysis/forcetypeassert v0.1.0 // indirect
 	github.com/gostaticanalysis/nilerr v0.1.1 // indirect
-	github.com/hamba/avro/v2 v2.23.1-0.20240729184924-dfd5956e73a9 // indirect
+	github.com/hamba/avro/v2 v2.23.1-0.20240731181311-3fc81b66c693 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/go-plugin v1.6.1 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect

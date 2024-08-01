@@ -21,8 +21,10 @@ import (
 
 	"github.com/conduitio/conduit-commons/config"
 	"github.com/conduitio/conduit-commons/opencdc"
+	"github.com/conduitio/conduit-commons/schema"
 	"github.com/conduitio/conduit-connector-generator/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"
+	sdkschema "github.com/conduitio/conduit-connector-sdk/schema"
 	"golang.org/x/time/rate"
 )
 
@@ -36,6 +38,8 @@ type Source struct {
 
 	recordGenerator internal.RecordGenerator
 	rateLimiter     *rate.Limiter
+
+	schema schema.Schema
 }
 
 func NewSource() sdk.Source {
@@ -54,7 +58,7 @@ func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
 	return s.config.Validate()
 }
 
-func (s *Source) Open(_ context.Context, _ opencdc.Position) error {
+func (s *Source) Open(ctx context.Context, _ opencdc.Position) error {
 	var generators []internal.RecordGenerator
 	for collection, cfg := range s.config.GetCollectionConfigs() {
 		var gen internal.RecordGenerator
@@ -80,6 +84,13 @@ func (s *Source) Open(_ context.Context, _ opencdc.Position) error {
 	if s.config.Burst.SleepTime > 0 {
 		s.burstUntil = time.Now().Add(s.config.Burst.GenerateTime)
 	}
+
+	avroSchema := `{"type":"record","name":"record","fields":[{"name":"admin","type":"boolean"},{"name":"id","type":"long"},{"name":"joined","type":{"type":"long","logicalType":"timestamp-micros"}},{"name":"name","type":"string"}]}`
+	sch, err := sdkschema.Create(ctx, schema.TypeAvro, "my-custom-schema-subject", []byte(avroSchema))
+	if err != nil {
+		return fmt.Errorf("could not create schema: %w", err)
+	}
+	s.schema = sch
 
 	return nil
 }
@@ -114,6 +125,9 @@ func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 			return opencdc.Record{}, err
 		}
 	}
+
+	schema.AttachPayloadSchemaToRecord(rec, s.schema)
+	sdk.Logger(ctx).Info().Bytes("record", rec.Bytes()).Msg("generated record")
 
 	s.recordCount++
 	return rec, nil
