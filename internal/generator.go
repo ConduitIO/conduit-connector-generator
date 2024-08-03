@@ -15,11 +15,16 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/conduitio/conduit-commons/schema"
+	"github.com/conduitio/conduit-commons/schema/avro"
+	sdkschema "github.com/conduitio/conduit-connector-sdk/schema"
 
 	"github.com/conduitio/conduit-commons/opencdc"
 	"github.com/goccy/go-json"
@@ -37,6 +42,7 @@ type baseRecordGenerator struct {
 	collection   string
 	operations   []opencdc.Operation
 	generateData func() opencdc.Data
+	postProcess  func(opencdc.Record) opencdc.Record
 
 	count int
 }
@@ -65,6 +71,10 @@ func (g *baseRecordGenerator) Next() opencdc.Record {
 		rec.Payload.After = g.generateData()
 	case opencdc.OperationDelete:
 		rec.Payload.Before = g.generateData()
+	}
+
+	if g.postProcess != nil {
+		rec = g.postProcess(rec)
 	}
 
 	return rec
@@ -98,16 +108,42 @@ func NewFileRecordGenerator(
 // with structured data. The fields map should contain the field names and types
 // for the structured data. The types can be one of: int, string, time, bool.
 func NewStructuredRecordGenerator(
+	ctx context.Context,
 	collection string,
 	operations []opencdc.Operation,
 	fields map[string]string,
+	subject string,
 ) (RecordGenerator, error) {
+	var postProcess func(opencdc.Record) opencdc.Record
+	if subject != "" {
+		if collection != "" {
+			subject = collection + "." + subject
+		}
+
+		d := randomStructuredData(fields)
+
+		srd, err := avro.SerdeForType(d)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get serde for type: %w", err)
+		}
+		sch, err := sdkschema.Create(ctx, schema.TypeAvro, subject, []byte(srd.String()))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create schema: %w", err)
+		}
+
+		postProcess = func(record opencdc.Record) opencdc.Record {
+			schema.AttachPayloadSchemaToRecord(record, sch)
+			return record
+		}
+	}
+
 	return &baseRecordGenerator{
 		collection: collection,
 		operations: operations,
 		generateData: func() opencdc.Data {
 			return randomStructuredData(fields)
 		},
+		postProcess: postProcess,
 	}, nil
 }
 

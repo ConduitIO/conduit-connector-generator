@@ -17,6 +17,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/conduitio/conduit-commons/config"
@@ -33,6 +34,8 @@ type Source struct {
 	config      Config
 	recordCount int
 	burstUntil  time.Time
+
+	sdkPayloadSchemaSubject string
 
 	recordGenerator internal.RecordGenerator
 	rateLimiter     *rate.Limiter
@@ -51,10 +54,25 @@ func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	return s.config.Validate()
+	err = s.config.Validate()
+	if err != nil {
+		return err
+	}
+
+	schemaPayloadEnabled, ok := cfg[sdk.SourceWithSchemaExtractionConfig{}.SchemaPayloadEnabledParameterName()]
+	if !ok {
+		schemaPayloadEnabled = "true"
+	}
+	if enabled, _ := strconv.ParseBool(schemaPayloadEnabled); enabled {
+		s.sdkPayloadSchemaSubject = cfg[sdk.SourceWithSchemaExtractionConfig{}.SchemaPayloadSubjectParameterName()]
+		if s.sdkPayloadSchemaSubject == "" {
+			s.sdkPayloadSchemaSubject = "payload"
+		}
+	}
+	return nil
 }
 
-func (s *Source) Open(_ context.Context, _ opencdc.Position) error {
+func (s *Source) Open(ctx context.Context, _ opencdc.Position) error {
 	var generators []internal.RecordGenerator
 	for collection, cfg := range s.config.GetCollectionConfigs() {
 		var gen internal.RecordGenerator
@@ -65,7 +83,7 @@ func (s *Source) Open(_ context.Context, _ opencdc.Position) error {
 		case FormatTypeRaw:
 			gen, err = internal.NewRawRecordGenerator(collection, cfg.SdkOperations(), cfg.Format.Options)
 		case FormatTypeStructured:
-			gen, err = internal.NewStructuredRecordGenerator(collection, cfg.SdkOperations(), cfg.Format.Options)
+			gen, err = internal.NewStructuredRecordGenerator(ctx, collection, cfg.SdkOperations(), cfg.Format.Options, s.sdkPayloadSchemaSubject)
 		}
 		if err != nil {
 			return fmt.Errorf("failed to create record generator for collection %q: %w", collection, err)
