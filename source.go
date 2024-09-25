@@ -116,6 +116,7 @@ func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 	}
 
 	s.recordCount++
+	rec.Metadata.SetReadAt(time.Now())
 	return rec, nil
 }
 
