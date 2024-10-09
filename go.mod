@@ -8,7 +8,7 @@ require (
 	github.com/goccy/go-json v0.10.3
 	github.com/golangci/golangci-lint v1.59.1
 	github.com/matryer/is v1.4.1
-	golang.org/x/time v0.6.0
+	golang.org/x/time v0.7.0
 )
 
 require (
