@@ -3,7 +3,7 @@ specification:
   name: generator
   summary: Generator plugin
   description: A plugin capable of generating dummy records (in JSON format).
-  version: v0.8.0-7-gb653f34
+  version: v0.8.0-8-g6b274ab
   author: Meroxa, Inc.
   source:
     parameters:
