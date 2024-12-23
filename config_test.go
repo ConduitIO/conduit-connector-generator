@@ -15,6 +15,7 @@
 package generator
 
 import (
+	"context"
 	"testing"
 
 	"github.com/matryer/is"
@@ -87,7 +88,7 @@ func TestConfig_Validate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			is := is.New(t)
-			err := tc.have.Validate()
+			err := tc.have.Validate(context.Background())
 			if tc.wantErr != "" {
 				is.True(err != nil)
 				is.Equal(tc.wantErr, err.Error())

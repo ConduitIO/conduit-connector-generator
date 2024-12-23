@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate paramgen -output config_paramgen.go Config
-
 package generator
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/conduitio/conduit-commons/opencdc"
 	"github.com/conduitio/conduit-connector-generator/internal"
+	sdk "github.com/conduitio/conduit-connector-sdk"
 	"golang.org/x/time/rate"
 )
 
@@ -34,6 +34,8 @@ const (
 )
 
 type Config struct {
+	sdk.DefaultSourceMiddleware
+
 	Burst BurstConfig `json:"burst"`
 	// Number of records to be generated (0 means infinite).
 	RecordCount int `json:"recordCount" validate:"gt=-1"`
@@ -75,7 +77,7 @@ type FormatConfig struct {
 	FileOptionsPath string `json:"options.path"`
 }
 
-func (c Config) Validate() error {
+func (c Config) Validate(context.Context) error {
 	var errs []error
 
 	// Validate readTime and rate.
