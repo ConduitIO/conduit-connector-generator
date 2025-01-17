@@ -25,10 +25,11 @@ var version = "(devel)"
 // Specification returns the Plugin's Specification.
 func Specification() sdk.Specification {
 	return sdk.Specification{
-		Name:        "generator",
-		Summary:     "Generator plugin",
-		Description: "A plugin capable of generating dummy records (in JSON format).",
-		Version:     version,
-		Author:      "Meroxa, Inc.",
+		Name:    "generator",
+		Summary: "A plugin capable of generating dummy records (in different formats).",
+		Description: "The generator plugin generates test data for Conduit pipelines. It can return data from a file, or" +
+			" generate dummy data. The generated dummy data can be returned in raw of structured format.",
+		Version: version,
+		Author:  "Meroxa, Inc.",
 	}
 }
