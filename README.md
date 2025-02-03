@@ -1,8 +1,79 @@
 # Conduit Connector Generator
 
 The generator connector is one of [Conduit](https://github.com/ConduitIO/conduit)
-builtin plugins. It generates sample records using its source connector. It has
-no destination and trying to use that will result in an error.
+builtin plugins.
+
+<!-- readmegen:description -->
+The generator is capable of generating dummy records (in JSON format). The
+connector makes it possible to configure the records' fields, the operation (
+whether the record was created, updated or deleted), the rate at which records
+are produced, and other properties of the connector.
+
+## Examples
+
+### Bursts
+
+The following configuration generates 100 records in bursts of 10 records each,
+with a 1-second sleep time between bursts.
+
+> [!NOTE]
+> The generator currently has no concept of resuming work. For instance, below
+> we have configured it to generate 100 records, but if we restart the pipeline
+> (by stopping and starting the pipeline or by restarting Conduit), then it will
+> start generating the 100 records from scratch.
+
+```yaml
+version: 2.2
+pipelines:
+  - id: example
+    status: running
+    connectors:
+      - id: example
+        type: source
+        plugin: generator
+        settings:
+          # global settings
+          rate: 10
+          recordCount: 100
+          burst.generateTime: 1s
+          burst.sleepTime: 1s
+          # default collection
+          format.type: structured
+          format.options.id: int
+          format.options.name: string
+          operations: create
+```
+
+### Collections
+
+The following configuration generates records forever with a steady rate of 1000
+records per second. Records are generated in the `users` and `orders` collections.
+The generated records have a different format, depending on the collection they
+belong to.
+
+```yaml
+version: 2.2
+pipelines:
+  - id: example
+    status: running
+    connectors:
+      - id: example
+        type: source
+        plugin: generator
+        settings:
+          # global settings
+          rate: 1000
+          # collection "users"
+          collections.users.format.type: structured
+          collections.users.format.options.id: int
+          collections.users.format.options.name: string
+          collections.users.operations: create
+          # collection "orders"
+          collections.orders.format.type: raw
+          collections.orders.format.options.id: int
+          collections.orders.format.options.product: string
+          collections.orders.operations: create,update,delete
+```<!-- /readmegen:description -->
 
 ## Configuration
 
@@ -110,72 +181,6 @@ pipelines:
           sdk.schema.extract.type: "avro"
 ```
 <!-- /readmegen:source.parameters.yaml -->
-
-## Examples
-
-### Bursts
-
-The following configuration generates 100 records in bursts of 10 records each,
-with a 1-second sleep time between bursts.
-
-> [!NOTE]
-> The generator currently has no concept of resuming work. For instance, below
-> we have configured it to generate 100 records, but if we restart the pipeline
-> (by stopping and starting the pipeline or by restarting Conduit), then it will
-> start generating the 100 records from scratch.
-
-```yaml
-version: 2.2
-pipelines:
-  - id: example
-    status: running
-    connectors:
-      - id: example
-        type: source
-        plugin: generator
-        settings:
-          # global settings
-          rate: 10
-          recordCount: 100
-          burst.generateTime: 1s
-          burst.sleepTime: 1s
-          # default collection
-          format.type: structured
-          format.options.id: int
-          format.options.name: string
-          operations: create
-```
-
-### Collections
-
-The following configuration generates records forever with a steady rate of 1000
-records per second. Records are generated in the `users` and `orders` collections.
-The generated records have a different format, depending on the collection they
-belong to.
-
-```yaml
-version: 2.2
-pipelines:
-  - id: example
-    status: running
-    connectors:
-      - id: example
-        type: source
-        plugin: generator
-        settings:
-          # global settings
-          rate: 1000
-          # collection "users"
-          collections.users.format.type: structured
-          collections.users.format.options.id: int
-          collections.users.format.options.name: string
-          collections.users.operations: create
-          # collection "orders"
-          collections.orders.format.type: raw
-          collections.orders.format.options.id: int
-          collections.orders.format.options.product: string
-          collections.orders.operations: create,update,delete
-```
 
 ## How to build it
 

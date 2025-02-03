@@ -37,12 +37,12 @@ type Source struct {
 	rateLimiter     *rate.Limiter
 }
 
-func (s *Source) Config() sdk.SourceConfig {
-	return &s.config
-}
-
 func NewSource() sdk.Source {
 	return sdk.SourceWithMiddleware(&Source{})
+}
+
+func (s *Source) Config() sdk.SourceConfig {
+	return &s.config
 }
 
 func (s *Source) Open(_ context.Context, _ opencdc.Position) error {
