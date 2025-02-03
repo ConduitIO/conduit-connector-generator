@@ -203,18 +203,19 @@ func testSourceRateLimit(t *testing.T, cfg map[string]string) {
 	readAssertDelay(is, 50*time.Millisecond)
 }
 
-func openTestSource(t *testing.T, cfg map[string]string) sdk.Source {
+func openTestSource(t *testing.T, cfgMap map[string]string) sdk.Source {
 	is := is.New(t)
+	ctx := context.Background()
 
 	s := &Source{}
 	t.Cleanup(func() {
-		_ = s.Teardown(context.Background())
+		_ = s.Teardown(ctx)
 	})
 
-	err := s.Configure(context.Background(), cfg)
+	err := sdk.Util.ParseConfig(ctx, cfgMap, s.Config(), Connector.NewSpecification().SourceParams)
 	is.NoErr(err)
 
-	err = s.Open(context.Background(), nil)
+	err = s.Open(ctx, nil)
 	is.NoErr(err)
 
 	return s

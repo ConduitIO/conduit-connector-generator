@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/conduitio/conduit-commons/config"
 	"github.com/conduitio/conduit-commons/opencdc"
 	"github.com/conduitio/conduit-connector-generator/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -38,20 +37,12 @@ type Source struct {
 	rateLimiter     *rate.Limiter
 }
 
+func (s *Source) Config() sdk.SourceConfig {
+	return &s.config
+}
+
 func NewSource() sdk.Source {
-	return sdk.SourceWithMiddleware(&Source{}, sdk.DefaultSourceMiddleware()...)
-}
-
-func (s *Source) Parameters() config.Parameters {
-	return s.config.Parameters()
-}
-
-func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
-	err := sdk.Util.ParseConfig(ctx, cfg, &s.config, NewSource().Parameters())
-	if err != nil {
-		return err
-	}
-	return s.config.Validate()
+	return sdk.SourceWithMiddleware(&Source{})
 }
 
 func (s *Source) Open(_ context.Context, _ opencdc.Position) error {
