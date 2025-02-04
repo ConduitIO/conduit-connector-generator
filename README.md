@@ -5,8 +5,8 @@ builtin plugins.
 
 <!-- readmegen:description -->
 The generator is capable of generating dummy records (in JSON format). The
-connector makes it possible to configure the records' fields, the operation (
-whether the record was created, updated or deleted), the rate at which records
+connector makes it possible to configure the records' fields, the operation
+(whether the record was created, updated or deleted), the rate at which records
 are produced, and other properties of the connector.
 
 ## Examples

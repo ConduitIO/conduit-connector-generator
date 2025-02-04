@@ -4,8 +4,8 @@ specification:
   summary: A plugin capable of generating dummy records (in different formats).
   description: |-
     The generator is capable of generating dummy records (in JSON format). The
-    connector makes it possible to configure the records' fields, the operation (
-    whether the record was created, updated or deleted), the rate at which records
+    connector makes it possible to configure the records' fields, the operation
+    (whether the record was created, updated or deleted), the rate at which records
     are produced, and other properties of the connector.
 
     ## Examples
@@ -73,7 +73,7 @@ specification:
               collections.orders.format.options.product: string
               collections.orders.operations: create,update,delete
     ```
-  version: (devel)
+  version: v0.10.0-dev
   author: Meroxa, Inc.
   source:
     parameters:
