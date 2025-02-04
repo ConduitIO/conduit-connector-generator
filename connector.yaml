@@ -73,7 +73,7 @@ specification:
               collections.orders.format.options.product: string
               collections.orders.operations: create,update,delete
     ```
-  version: v0.10.0-dev
+  version: v0.10.0
   author: Meroxa, Inc.
   source:
     parameters:
