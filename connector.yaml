@@ -1,7 +1,7 @@
 version: "1.0"
 specification:
   name: generator
-  summary: Generator plugin
+  summary: A plugin capable of generating dummy records (in different formats).
   description: |-
     The generator is capable of generating dummy records (in JSON format). The
     connector makes it possible to configure the records' fields, the operation (
