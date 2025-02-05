@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	github.com/conduitio/conduit-commons v0.5.1
-	github.com/conduitio/conduit-connector-sdk v0.13.0
+	github.com/conduitio/conduit-connector-sdk v0.13.1
 	github.com/goccy/go-json v0.10.5
 	github.com/golangci/golangci-lint v1.63.4
 	github.com/matryer/is v1.4.1
