@@ -8,7 +8,7 @@ require (
 	github.com/goccy/go-json v0.10.5
 	github.com/golangci/golangci-lint v1.63.4
 	github.com/matryer/is v1.4.1
-	golang.org/x/time v0.9.0
+	golang.org/x/time v0.10.0
 	mvdan.cc/gofumpt v0.7.0
 )
 
