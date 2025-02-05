@@ -97,87 +97,109 @@ pipelines:
           # Comma separated list of record operations to generate. Allowed
           # values are "create", "update", "delete", "snapshot".
           # Type: string
+          # Required: yes
           collections.*.operations: "create"
           # Comma separated list of record operations to generate. Allowed
           # values are "create", "update", "delete", "snapshot".
           # Type: string
+          # Required: yes
           operations: "create"
           # The amount of time the generator is generating records in a burst.
           # Has an effect only if `burst.sleepTime` is set.
           # Type: duration
+          # Required: no
           burst.generateTime: "1s"
           # The time the generator "sleeps" between bursts.
           # Type: duration
+          # Required: no
           burst.sleepTime: "0s"
           # The options for the `raw` and `structured` format types. It accepts
           # pairs of field names and field types, where the type can be one of:
           # `int`, `string`, `time`, `bool`, `duration`.
           # Type: string
+          # Required: no
           collections.*.format.options.*: ""
           # Path to the input file (only applicable if the format type is
           # `file`).
           # Type: string
+          # Required: no
           collections.*.format.options.path: ""
           # The format of the generated payload data (raw, structured, file).
           # Type: string
+          # Required: no
           collections.*.format.type: ""
           # The options for the `raw` and `structured` format types. It accepts
           # pairs of field names and field types, where the type can be one of:
           # `int`, `string`, `time`, `bool`, `duration`.
           # Type: string
+          # Required: no
           format.options.*: ""
           # Path to the input file (only applicable if the format type is
           # `file`).
           # Type: string
+          # Required: no
           format.options.path: ""
           # The format of the generated payload data (raw, structured, file).
           # Type: string
+          # Required: no
           format.type: ""
           # The maximum rate in records per second, at which records are
           # generated (0 means no rate limit).
           # Type: float
+          # Required: no
           rate: "0.0"
           # The time it takes to 'read' a record. Deprecated: use `rate`
           # instead.
           # Type: duration
+          # Required: no
           readTime: "0s"
           # Number of records to be generated (0 means infinite).
           # Type: int
+          # Required: no
           recordCount: "0"
           # Maximum delay before an incomplete batch is read from the source.
           # Type: duration
+          # Required: no
           sdk.batch.delay: "0"
           # Maximum size of batch before it gets read from the source.
           # Type: int
+          # Required: no
           sdk.batch.size: "0"
           # Specifies whether to use a schema context name. If set to false, no
           # schema context name will be used, and schemas will be saved with the
           # subject name specified in the connector (not safe because of name
           # conflicts).
           # Type: bool
+          # Required: no
           sdk.schema.context.enabled: "true"
           # Schema context name to be used. Used as a prefix for all schema
           # subject names. If empty, defaults to the connector ID.
           # Type: string
+          # Required: no
           sdk.schema.context.name: ""
           # Whether to extract and encode the record key with a schema.
           # Type: bool
+          # Required: no
           sdk.schema.extract.key.enabled: "true"
           # The subject of the key schema. If the record metadata contains the
           # field "opencdc.collection" it is prepended to the subject name and
           # separated with a dot.
           # Type: string
+          # Required: no
           sdk.schema.extract.key.subject: "key"
           # Whether to extract and encode the record payload with a schema.
           # Type: bool
+          # Required: no
           sdk.schema.extract.payload.enabled: "true"
           # The subject of the payload schema. If the record metadata contains
           # the field "opencdc.collection" it is prepended to the subject name
           # and separated with a dot.
           # Type: string
+          # Required: no
           sdk.schema.extract.payload.subject: "payload"
           # The type of the payload schema.
           # Type: string
+          # Required: no
           sdk.schema.extract.type: "avro"
 ```
 <!-- /readmegen:source.parameters.yaml -->
