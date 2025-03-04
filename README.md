@@ -73,7 +73,8 @@ pipelines:
           collections.orders.format.options.id: int
           collections.orders.format.options.product: string
           collections.orders.operations: create,update,delete
-```<!-- /readmegen:description -->
+```
+<!-- /readmegen:description -->
 
 ## Configuration
 
