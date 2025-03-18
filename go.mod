@@ -6,7 +6,7 @@ require (
 	github.com/conduitio/conduit-commons v0.5.1
 	github.com/conduitio/conduit-connector-sdk v0.13.2
 	github.com/goccy/go-json v0.10.5
-	github.com/golangci/golangci-lint v1.64.7
+	github.com/golangci/golangci-lint v1.64.8
 	github.com/matryer/is v1.4.1
 	golang.org/x/time v0.11.0
 	mvdan.cc/gofumpt v0.7.0
