@@ -25,7 +25,7 @@ import (
 	"github.com/goccy/go-json"
 )
 
-var KnownTypes = []string{"int", "string", "time", "bool", "duration"}
+var KnownTypes = []string{"int", "string", "time", "bool", "duration", "true"}
 
 // RecordGenerator is an interface for generating records.
 type RecordGenerator interface {
@@ -70,6 +70,40 @@ func (g *baseRecordGenerator) Next() opencdc.Record {
 	return rec
 }
 
+// NewStructuredRecordGenerator creates a RecordGenerator that generates records
+// with structured data. The fields map should contain the field names and types
+// for the structured data. The types can be one of: int, string, time, bool.
+func NewStructuredRecordGenerator(
+	collection string,
+	operations []opencdc.Operation,
+	fields map[string]string,
+) (RecordGenerator, error) {
+	generateFn := func() opencdc.Data {
+		return randomStructuredData(fields)
+	}
+
+	singletonStr, ok := fields["singleton"]
+	if ok {
+		singleton, err := strconv.ParseBool(singletonStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid value for field `singleton`: %w", err)
+		}
+		if singleton {
+			delete(fields, "singleton")
+			data := randomStructuredData(fields)
+			generateFn = func() opencdc.Data {
+				return data
+			}
+		}
+	}
+
+	return &baseRecordGenerator{
+		collection:   collection,
+		operations:   operations,
+		generateData: generateFn,
+	}, nil
+}
+
 // NewFileRecordGenerator creates a RecordGenerator that reads the contents of a
 // file at the given path. The file is read once and cached in memory. The
 // RecordGenerator will generate records with the contents of the file as the
@@ -90,23 +124,6 @@ func NewFileRecordGenerator(
 		operations: operations,
 		generateData: func() opencdc.Data {
 			return opencdc.RawData(bytes)
-		},
-	}, nil
-}
-
-// NewStructuredRecordGenerator creates a RecordGenerator that generates records
-// with structured data. The fields map should contain the field names and types
-// for the structured data. The types can be one of: int, string, time, bool.
-func NewStructuredRecordGenerator(
-	collection string,
-	operations []opencdc.Operation,
-	fields map[string]string,
-) (RecordGenerator, error) {
-	return &baseRecordGenerator{
-		collection: collection,
-		operations: operations,
-		generateData: func() opencdc.Data {
-			return randomStructuredData(fields)
 		},
 	}, nil
 }

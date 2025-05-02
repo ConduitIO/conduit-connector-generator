@@ -24,6 +24,8 @@ import (
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/goccy/go-json"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/matryer/is"
 )
 
@@ -130,6 +132,61 @@ func TestSource_Read_StructuredData(t *testing.T) {
 	is.True(ok)
 	is.True(!joined.After(now))
 	is.True(joined.After(now.Add(-time.Millisecond * 10)))
+}
+
+func TestSource_Read_StructuredData_Singleton(t *testing.T) {
+	is := is.New(t)
+	underTest := openTestSource(
+		t,
+		map[string]string{
+			"recordCount":              "11",
+			"format.type":              "structured",
+			"format.options.singleton": "true",
+			"format.options.id":        "int",
+			"format.options.name":      "string",
+			"format.options.joined":    "time",
+			"format.options.admin":     "bool",
+			"format.options.timeout":   "duration",
+			"operations":               "snapshot",
+		},
+	)
+
+	firstRec, err := underTest.Read(context.Background())
+	is.NoErr(err)
+	now := time.Now()
+
+	v, ok := firstRec.Payload.After.(opencdc.StructuredData)
+	is.True(ok)
+
+	is.Equal(len(v), 5)
+	is.True(v["id"].(int) > 0)
+	is.True(v["name"].(string) != "")
+	_, ok = v["admin"].(bool)
+	is.True(ok)
+	dur, ok := v["timeout"].(time.Duration)
+	is.True(ok)
+	is.True(dur > 0)
+
+	joined, ok := v["joined"].(time.Time)
+	is.True(ok)
+	is.True(!joined.After(now))
+	is.True(joined.After(now.Add(-time.Millisecond * 10)))
+
+	for i := 0; i < 10; i++ {
+		got, err := underTest.Read(context.Background())
+		is.NoErr(err)
+
+		opts := cmp.Options{
+			cmpopts.IgnoreUnexported(opencdc.Record{}),
+			cmpopts.IgnoreFields(opencdc.Record{}, "Position"),
+			cmpopts.IgnoreFields(opencdc.Record{}, "Key"),
+		}
+
+		delete(firstRec.Metadata, "opencdc.createdAt")
+		delete(got.Metadata, "opencdc.createdAt")
+
+		is.Equal("", cmp.Diff(firstRec, got, opts)) // record mismatch (-want +got)
+	}
 }
 
 func TestSource_Read_RateLimit(t *testing.T) {
