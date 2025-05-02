@@ -52,9 +52,9 @@ func (g *baseRecordGenerator) Next() opencdc.Record {
 
 	rec := opencdc.Record{
 		Position:  opencdc.Position(strconv.Itoa(g.count)),
-		Operation: g.operations[rand.Intn(len(g.operations))],
+		Operation: opencdc.OperationSnapshot,
 		Metadata:  metadata,
-		Key:       opencdc.RawData(randomWord()),
+		Key:       opencdc.RawData("random-key"),
 	}
 
 	switch rec.Operation {
