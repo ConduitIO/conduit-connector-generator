@@ -91,8 +91,9 @@ func NewStructuredRecordGenerator(
 		if singleton {
 			delete(fields, "singleton")
 			data := randomStructuredData(fields)
+			dataPtr := &data
 			generateFn = func() opencdc.Data {
-				return data
+				return *dataPtr
 			}
 		}
 	}
