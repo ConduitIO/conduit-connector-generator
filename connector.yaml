@@ -22,7 +22,7 @@ specification:
     > start generating the 100 records from scratch.
 
     ```yaml
-    version: 2.2
+    version: v0.10.4
     pipelines:
       - id: example
         status: running
