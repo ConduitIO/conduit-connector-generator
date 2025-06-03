@@ -22,7 +22,7 @@ specification:
     > start generating the 100 records from scratch.
 
     ```yaml
-    version: v0.10.4
+    version: v2.2
     pipelines:
       - id: example
         status: running
@@ -73,7 +73,7 @@ specification:
               collections.orders.format.options.product: string
               collections.orders.operations: create,update,delete
     ```
-  version: v0.10.3
+  version: v0.10.4
   author: Meroxa, Inc.
   source:
     parameters:
