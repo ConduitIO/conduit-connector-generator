@@ -7,7 +7,7 @@ require (
 	github.com/conduitio/conduit-connector-sdk v0.14.0
 	github.com/goccy/go-json v0.10.5
 	github.com/matryer/is v1.4.1
-	golang.org/x/time v0.11.0
+	golang.org/x/time v0.12.0
 )
 
 require (
