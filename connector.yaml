@@ -155,6 +155,7 @@ specification:
       - name: readTime
         description: |-
           The time it takes to 'read' a record.
+
           Deprecated: use `rate` instead.
         type: duration
         default: ""
