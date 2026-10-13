@@ -94,6 +94,7 @@ pipelines:
     connectors:
       - id: example
         plugin: "generator"
+        type: source
         settings:
           # Comma separated list of record operations to generate. Allowed
           # values are "create", "update", "delete", "snapshot".
@@ -149,8 +150,8 @@ pipelines:
           # Type: float
           # Required: no
           rate: "0.0"
-          # The time it takes to 'read' a record. Deprecated: use `rate`
-          # instead.
+          # The time it takes to 'read' a record.
+          # Deprecated: use `rate` instead.
           # Type: duration
           # Required: no
           readTime: "0s"

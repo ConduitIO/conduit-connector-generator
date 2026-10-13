@@ -40,6 +40,7 @@ type Config struct {
 	// Number of records to be generated (0 means infinite).
 	RecordCount int `json:"recordCount" validate:"gt=-1"`
 	// The time it takes to 'read' a record.
+	//
 	// Deprecated: use `rate` instead.
 	ReadTime time.Duration `json:"readTime"`
 	// The maximum rate in records per second, at which records are generated (0
