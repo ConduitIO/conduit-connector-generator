@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -73,7 +74,8 @@ func (g *baseRecordGenerator) Next() opencdc.Record {
 // NewFileRecordGenerator creates a RecordGenerator that reads the contents of a
 // file at the given path. The file is read once and cached in memory. The
 // RecordGenerator will generate records with the contents of the file as the
-// payload data.
+// payload data. The cached contents are copied into every payload, so records
+// never share bytes with each other or with the cache.
 func NewFileRecordGenerator(
 	collection string,
 	operations []opencdc.Operation,
@@ -81,7 +83,7 @@ func NewFileRecordGenerator(
 ) (RecordGenerator, error) {
 	// Files are cached, so that the time to read files doesn't affect generator
 	// read times and the message rate. This will increase Conduit's memory usage.
-	bytes, err := os.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
@@ -89,7 +91,10 @@ func NewFileRecordGenerator(
 		collection: collection,
 		operations: operations,
 		generateData: func() opencdc.Data {
-			return opencdc.RawData(bytes)
+			// Every record owns its payload (including Before and After of an
+			// update). Handing out the cached slice would let any in-process
+			// consumer that modifies one record's bytes change all the others.
+			return opencdc.RawData(slices.Clone(contents))
 		},
 	}, nil
 }
