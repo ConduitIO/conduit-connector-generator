@@ -37,12 +37,18 @@ type combinedRecordGenerator struct {
 }
 
 func (g *combinedRecordGenerator) Next() opencdc.Record {
-	i := rand.Intn(len(g.generators))
+	return g.nextFrom(rand.Intn(len(g.generators)))
+}
+
+// nextFrom generates the next record from the i-th generator.
+func (g *combinedRecordGenerator) nextFrom(i int) opencdc.Record {
 	gen := g.generators[i]
 	rec := gen.Next()
 
-	// keep position unique
-	prefix := []byte(strconv.Itoa(i))
+	// Keep the position unique across generators. The separator is what makes
+	// it unambiguous: without it generator 1 at count 11 and generator 11 at
+	// count 1 are both "111".
+	prefix := []byte(strconv.Itoa(i) + ":")
 	newPos := make([]byte, len(prefix)+len(rec.Position))
 	copy(newPos, prefix)
 	copy(newPos[len(prefix):], rec.Position)
